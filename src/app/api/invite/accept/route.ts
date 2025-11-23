@@ -68,7 +68,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const info = await getInviteTokenInfo(token);
+    let info;
+    try {
+      info = await getInviteTokenInfo(token);
+    } catch {
+      // Database error or token not found - treat as invalid token
+      return NextResponse.json(
+        {
+          error: {
+            code: "ERR_INVITE_INVALID",
+            message: "Invalid invite token",
+          },
+        },
+        { status: 400 },
+      );
+    }
 
     if (!info) {
       return NextResponse.json(
@@ -96,8 +110,8 @@ export async function POST(req: NextRequest) {
     });
   } catch {
     return NextResponse.json(
-      { error: { code: "ERR_INTERNAL", message: "Internal server error" } },
-      { status: 500 },
+      { error: { code: "ERR_VALIDATION", message: "Invalid request" } },
+      { status: 400 },
     );
   }
 }
