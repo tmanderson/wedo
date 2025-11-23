@@ -27,6 +27,8 @@ next-env.d.ts
 
 # Testing
 coverage/
+playwright-report/
+test-results/
 
 # IDEs and editors
 .idea/
