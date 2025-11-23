@@ -1,8 +1,7 @@
-import { PrismaClient, CollaboratorStatus } from '@prisma/client';
-import { randomBytes } from 'crypto';
-import { Errors } from '@/lib/errors';
-import { createCollaborator } from './collaboratorService';
-import { sendMagicLinkInvite } from '@/lib/supabaseAdmin';
+import { PrismaClient, CollaboratorStatus } from "@prisma/client";
+import { randomBytes } from "crypto";
+import { Errors } from "@/lib/errors";
+import { sendMagicLinkInvite } from "@/lib/supabaseAdmin";
 
 const prisma = new PrismaClient();
 
@@ -12,7 +11,7 @@ const INVITE_TOKEN_EXPIRY_DAYS = 30;
  * Generates a secure random token
  */
 function generateToken(): string {
-  return randomBytes(32).toString('hex');
+  return randomBytes(32).toString("hex");
 }
 
 export interface InviteEmail {
@@ -34,7 +33,7 @@ export interface InviteResult {
 export async function createInviteTokens(
   registryId: string,
   invites: InviteEmail[],
-  createdByUserId: string
+  createdByUserId: string,
 ): Promise<InviteResult[]> {
   const results: InviteResult[] = [];
 
@@ -44,14 +43,14 @@ export async function createInviteTokens(
         registryId,
         invite.email.toLowerCase(),
         invite.name || null,
-        createdByUserId
+        createdByUserId,
       );
       results.push(result);
     } catch (error) {
       results.push({
         email: invite.email,
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -66,7 +65,7 @@ async function createSingleInvite(
   registryId: string,
   email: string,
   name: string | null,
-  createdByUserId: string
+  createdByUserId: string,
 ): Promise<InviteResult> {
   return prisma.$transaction(async (tx) => {
     // Create or get collaborator
@@ -74,7 +73,7 @@ async function createSingleInvite(
       tx,
       registryId,
       email,
-      name
+      name,
     );
 
     // Mark any existing unused tokens as used
@@ -105,14 +104,14 @@ async function createSingleInvite(
     });
 
     // Send magic link email via Supabase
-    const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+    const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
     const redirectUrl = `${appBaseUrl}/accept-invite?token=${token}`;
 
     try {
       await sendMagicLinkInvite(email, redirectUrl);
     } catch (emailError) {
       // Log but don't fail - token is still created
-      console.error('Failed to send invite email:', emailError);
+      console.error("Failed to send invite email:", emailError);
     }
 
     return {
@@ -131,7 +130,7 @@ async function createCollaboratorInTx(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   registryId: string,
   email: string,
-  name: string | null
+  name: string | null,
 ) {
   // Check if collaborator already exists
   const existing = await tx.collaborator.findUnique({
@@ -172,7 +171,7 @@ async function createCollaboratorInTx(
 export async function validateAndConsumeInviteToken(
   token: string,
   userId: string,
-  userEmail: string
+  userEmail: string,
 ) {
   return prisma.$transaction(async (tx) => {
     // Find the token

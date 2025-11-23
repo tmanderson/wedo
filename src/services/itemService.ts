@@ -1,9 +1,4 @@
-import {
-  PrismaClient,
-  ItemStatus,
-  CollaboratorStatus,
-  Prisma,
-} from "@prisma/client";
+import { PrismaClient, ItemStatus, CollaboratorStatus } from "@prisma/client";
 import { Errors } from "@/lib/errors";
 import { parseUrlTitle } from "@/lib/urlParser";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validation";

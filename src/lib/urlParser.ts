@@ -16,7 +16,7 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
     const parsedUrl = new URL(url);
 
     // Only allow http/https
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
       return null;
     }
 
@@ -28,10 +28,10 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'GiftRegistry/1.0 (URL Parser)',
-          'Accept': 'text/html',
+          "User-Agent": "GiftRegistry/1.0 (URL Parser)",
+          Accept: "text/html",
         },
-        redirect: 'follow',
+        redirect: "follow",
       });
 
       clearTimeout(timeoutId);
@@ -41,8 +41,8 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
       }
 
       // Only process HTML content
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('text/html')) {
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("text/html")) {
         return null;
       }
 
@@ -50,7 +50,7 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
       const reader = response.body?.getReader();
       if (!reader) return null;
 
-      let html = '';
+      let html = "";
       const decoder = new TextDecoder();
       const maxBytes = 50 * 1024; // 50KB
 
@@ -60,7 +60,7 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
         html += decoder.decode(value, { stream: true });
 
         // Early exit if we've found a title tag
-        if (html.includes('</title>') || html.includes('</head>')) {
+        if (html.includes("</title>") || html.includes("</head>")) {
           break;
         }
       }
@@ -68,7 +68,7 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
       reader.cancel();
 
       return extractTitle(html);
-    } catch (fetchError) {
+    } catch {
       clearTimeout(timeoutId);
       return null;
     }
@@ -83,22 +83,26 @@ export async function parseUrlTitle(url: string): Promise<string | null> {
  */
 function extractTitle(html: string): string | null {
   // Try og:title first
-  const ogTitleMatch = html.match(
-    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i
-  ) || html.match(
-    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i
-  );
+  const ogTitleMatch =
+    html.match(
+      /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i,
+    ) ||
+    html.match(
+      /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i,
+    );
 
   if (ogTitleMatch && ogTitleMatch[1]) {
     return decodeHtmlEntities(ogTitleMatch[1].trim());
   }
 
   // Try twitter:title
-  const twitterTitleMatch = html.match(
-    /<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i
-  ) || html.match(
-    /<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:title["']/i
-  );
+  const twitterTitleMatch =
+    html.match(
+      /<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i,
+    ) ||
+    html.match(
+      /<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:title["']/i,
+    );
 
   if (twitterTitleMatch && twitterTitleMatch[1]) {
     return decodeHtmlEntities(twitterTitleMatch[1].trim());
@@ -118,30 +122,30 @@ function extractTitle(html: string): string | null {
  */
 function decodeHtmlEntities(text: string): string {
   const entities: Record<string, string> = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#39;': "'",
-    '&apos;': "'",
-    '&nbsp;': ' ',
-    '&#x27;': "'",
-    '&#x2F;': '/',
-    '&#x60;': '`',
-    '&#x3D;': '=',
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#39;": "'",
+    "&apos;": "'",
+    "&nbsp;": " ",
+    "&#x27;": "'",
+    "&#x2F;": "/",
+    "&#x60;": "`",
+    "&#x3D;": "=",
   };
 
   let decoded = text;
   for (const [entity, char] of Object.entries(entities)) {
-    decoded = decoded.replace(new RegExp(entity, 'g'), char);
+    decoded = decoded.replace(new RegExp(entity, "g"), char);
   }
 
   // Handle numeric entities
   decoded = decoded.replace(/&#(\d+);/g, (_, code) =>
-    String.fromCharCode(parseInt(code, 10))
+    String.fromCharCode(parseInt(code, 10)),
   );
   decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
-    String.fromCharCode(parseInt(code, 16))
+    String.fromCharCode(parseInt(code, 16)),
   );
 
   return decoded;

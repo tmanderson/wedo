@@ -1,6 +1,6 @@
-import { PrismaClient, CollaboratorStatus } from '@prisma/client';
-import { ApiError, Errors } from '@/lib/errors';
-import type { CreateRegistryInput } from '@/lib/validation';
+import { PrismaClient, CollaboratorStatus } from "@prisma/client";
+import { Errors } from "@/lib/errors";
+import type { CreateRegistryInput } from "@/lib/validation";
 
 const prisma = new PrismaClient();
 
@@ -22,7 +22,7 @@ export interface RegistryCreateResult {
 export async function createRegistry(
   userId: string,
   userEmail: string,
-  data: CreateRegistryInput
+  data: CreateRegistryInput,
 ): Promise<RegistryCreateResult> {
   return prisma.$transaction(async (tx) => {
     // Create the registry
@@ -92,7 +92,7 @@ export async function listRegistriesForUser(userId: string) {
     },
     orderBy: {
       registry: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     },
   });
@@ -112,7 +112,10 @@ export async function listRegistriesForUser(userId: string) {
 /**
  * Gets a registry with full details, applying visibility rules for the viewer
  */
-export async function getRegistryForViewer(registryId: string, viewerUserId: string) {
+export async function getRegistryForViewer(
+  registryId: string,
+  viewerUserId: string,
+) {
   // First verify the user is a collaborator
   const viewerCollaborator = await prisma.collaborator.findFirst({
     where: {
@@ -123,7 +126,7 @@ export async function getRegistryForViewer(registryId: string, viewerUserId: str
   });
 
   if (!viewerCollaborator) {
-    throw Errors.forbidden('You are not a member of this registry');
+    throw Errors.forbidden("You are not a member of this registry");
   }
 
   const registry = await prisma.registry.findUnique({
@@ -154,18 +157,18 @@ export async function getRegistryForViewer(registryId: string, viewerUserId: str
                     select: { id: true, name: true },
                   },
                 },
-                orderBy: { createdAt: 'asc' },
+                orderBy: { createdAt: "asc" },
               },
             },
           },
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: "asc" },
       },
     },
   });
 
   if (!registry) {
-    throw Errors.notFound('Registry');
+    throw Errors.notFound("Registry");
   }
 
   // Apply visibility rules
@@ -178,7 +181,7 @@ export async function getRegistryForViewer(registryId: string, viewerUserId: str
  */
 function applyVisibilityRules(
   registry: Awaited<ReturnType<typeof getRegistryRaw>>,
-  viewerUserId: string
+  viewerUserId: string,
 ) {
   const collaborators = registry.collaborators.map((collaborator) => {
     const isViewerOwner = collaborator.userId === viewerUserId;
@@ -250,7 +253,8 @@ function applyVisibilityRules(
   };
 }
 
-// Helper type for raw registry query
+// Helper function used for its return type via ReturnType<typeof getRegistryRaw>
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getRegistryRaw(registryId: string) {
   return prisma.registry.findUniqueOrThrow({
     where: { id: registryId },
@@ -263,8 +267,12 @@ async function getRegistryRaw(registryId: string) {
             include: {
               items: {
                 include: {
-                  createdByUser: { select: { id: true, name: true, email: true } },
-                  claimedByUser: { select: { id: true, name: true, email: true } },
+                  createdByUser: {
+                    select: { id: true, name: true, email: true },
+                  },
+                  claimedByUser: {
+                    select: { id: true, name: true, email: true },
+                  },
                   deletedByUser: { select: { id: true, name: true } },
                 },
               },
@@ -279,7 +287,10 @@ async function getRegistryRaw(registryId: string) {
 /**
  * Checks if a user can invite to a registry
  */
-export async function canUserInvite(registryId: string, userId: string): Promise<boolean> {
+export async function canUserInvite(
+  registryId: string,
+  userId: string,
+): Promise<boolean> {
   const registry = await prisma.registry.findUnique({
     where: { id: registryId },
     include: {
@@ -293,7 +304,7 @@ export async function canUserInvite(registryId: string, userId: string): Promise
   });
 
   if (!registry) {
-    throw Errors.notFound('Registry');
+    throw Errors.notFound("Registry");
   }
 
   // Owner can always invite

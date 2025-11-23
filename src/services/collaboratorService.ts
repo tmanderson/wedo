@@ -1,5 +1,5 @@
-import { PrismaClient, CollaboratorStatus, ItemStatus } from '@prisma/client';
-import { Errors } from '@/lib/errors';
+import { PrismaClient, CollaboratorStatus, ItemStatus } from "@prisma/client";
+import { Errors } from "@/lib/errors";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +10,7 @@ export async function createCollaborator(
   registryId: string,
   email: string,
   name: string | null,
-  createdByUserId: string
+  _createdByUserId: string,
 ) {
   return prisma.$transaction(async (tx) => {
     // Check if collaborator already exists
@@ -59,14 +59,14 @@ export async function createCollaborator(
 export async function acceptCollaborator(
   collaboratorId: string,
   userId: string,
-  userEmail: string
+  userEmail: string,
 ) {
   const collaborator = await prisma.collaborator.findUnique({
     where: { id: collaboratorId },
   });
 
   if (!collaborator) {
-    throw Errors.notFound('Collaborator');
+    throw Errors.notFound("Collaborator");
   }
 
   // Verify email matches
@@ -98,7 +98,7 @@ export async function acceptCollaborator(
 export async function removeCollaborator(
   registryId: string,
   collaboratorId: string,
-  actingUserId: string
+  actingUserId: string,
 ) {
   return prisma.$transaction(async (tx) => {
     // Get the registry to check permissions
@@ -107,12 +107,14 @@ export async function removeCollaborator(
     });
 
     if (!registry) {
-      throw Errors.notFound('Registry');
+      throw Errors.notFound("Registry");
     }
 
     // Only owner can remove collaborators (MVP)
     if (registry.ownerId !== actingUserId) {
-      throw Errors.forbidden('Only the registry owner can remove collaborators');
+      throw Errors.forbidden(
+        "Only the registry owner can remove collaborators",
+      );
     }
 
     // Get the collaborator being removed
@@ -122,12 +124,12 @@ export async function removeCollaborator(
     });
 
     if (!collaborator || collaborator.registryId !== registryId) {
-      throw Errors.notFound('Collaborator');
+      throw Errors.notFound("Collaborator");
     }
 
     // Cannot remove yourself if you're the owner
     if (collaborator.userId === actingUserId) {
-      throw Errors.forbidden('Cannot remove yourself from your own registry');
+      throw Errors.forbidden("Cannot remove yourself from your own registry");
     }
 
     // Clear any claims this collaborator holds on other items
@@ -199,7 +201,10 @@ export async function getCollaborator(collaboratorId: string) {
 /**
  * Gets a collaborator by registry and email
  */
-export async function getCollaboratorByEmail(registryId: string, email: string) {
+export async function getCollaboratorByEmail(
+  registryId: string,
+  email: string,
+) {
   return prisma.collaborator.findUnique({
     where: {
       registryId_email: { registryId, email: email.toLowerCase() },

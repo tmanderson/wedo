@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
     "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
@@ -51,11 +51,13 @@
     "autoprefixer": "^10.4.22",
     "dotenv": "^16.6.1",
     "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.3",
     "jest": "^30.2.0",
     "postcss": "^8.5.6",
     "supertest": "^7.1.4",
     "tailwindcss": "^4.1.17",
     "ts-jest": "^29.4.5",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript-eslint": "^8.47.0"
   }
 }
