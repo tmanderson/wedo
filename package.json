@@ -1,0 +1,58 @@
+{
+  "name": "gift-registry",
+  "version": "1.0.0",
+  "description": "Multi-party gift registry for collaborative gift planning",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
+    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:generate": "prisma generate",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "gift-registry",
+    "next.js",
+    "prisma",
+    "supabase"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.84.0",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.6",
+    "jose": "^6.1.2",
+    "next": "^16.0.3",
+    "prisma": "^5.22.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "uuid": "^13.0.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
+    "autoprefixer": "^10.4.22",
+    "dotenv": "^16.6.1",
+    "eslint": "^9.39.1",
+    "jest": "^30.2.0",
+    "postcss": "^8.5.6",
+    "supertest": "^7.1.4",
+    "tailwindcss": "^4.1.17",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2"
+  }
+}

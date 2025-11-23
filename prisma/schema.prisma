@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum CollaboratorStatus {
+  PENDING
+  ACCEPTED
+  REMOVED
+}
+
+enum ItemStatus {
+  UNCLAIMED
+  CLAIMED
+  BOUGHT
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String?
+  createdAt    DateTime  @default(now())
+  lastAuthAt   DateTime?
+
+  // Relations
+  registries     Registry[]     @relation("registryOwner")
+  collaborators  Collaborator[]
+  itemsCreated   Item[]         @relation("itemCreatedBy")
+  itemsClaimed   Item[]         @relation("itemClaimedBy")
+  itemsDeleted   Item[]         @relation("itemDeletedBy")
+  inviteTokens   InviteToken[]  @relation("inviteCreatedBy")
+}
+
+model Registry {
+  id                     String   @id @default(uuid())
+  title                  String
+  occasionDate           DateTime?
+  deadline               DateTime?
+  ownerId                String
+  collaboratorsCanInvite Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  owner         User           @relation("registryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  collaborators Collaborator[]
+  sublists      SubList[]
+  inviteTokens  InviteToken[]
+
+  @@index([ownerId])
+}
+
+model Collaborator {
+  id         String             @id @default(uuid())
+  registryId String
+  userId     String?            // nullable until invite accepted
+  email      String
+  name       String?
+  status     CollaboratorStatus @default(PENDING)
+  createdAt  DateTime           @default(now())
+  acceptedAt DateTime?
+  removedAt  DateTime?
+
+  // Relations
+  registry     Registry       @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sublist      SubList?
+  inviteTokens InviteToken[]
+
+  @@unique([registryId, email])
+  @@index([userId])
+}
+
+model SubList {
+  id             String   @id @default(uuid())
+  registryId     String
+  collaboratorId String   @unique
+  createdAt      DateTime @default(now())
+
+  // Relations
+  registry     Registry     @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  collaborator Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  items        Item[]
+
+  @@index([registryId])
+  @@index([collaboratorId])
+}
+
+model Item {
+  id              String     @id @default(uuid())
+  sublistId       String
+  label           String?
+  url             String?
+  parsedTitle     String?
+  createdByUserId String?
+  createdAt       DateTime   @default(now())
+
+  // Soft-delete by owner
+  deletedByUserId String?
+  deletedAt       DateTime?
+
+  // Single-row claim fields
+  status          ItemStatus @default(UNCLAIMED)
+  claimedByUserId String?
+  claimedAt       DateTime?
+  boughtAt        DateTime?
+
+  // Relations
+  sublist       SubList @relation(fields: [sublistId], references: [id], onDelete: Cascade)
+  createdByUser User?   @relation("itemCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  claimedByUser User?   @relation("itemClaimedBy", fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  deletedByUser User?   @relation("itemDeletedBy", fields: [deletedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([sublistId])
+  @@index([claimedByUserId])
+  @@index([status])
+}
+
+model InviteToken {
+  id             String   @id @default(uuid())
+  token          String   @unique
+  registryId     String
+  collaboratorId String?
+  email          String
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+  used           Boolean  @default(false)
+  createdByUserId String?
+
+  // Relations
+  registry      Registry      @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  collaborator  Collaborator? @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  createdByUser User?         @relation("inviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([registryId])
+  @@index([email])
+  @@index([expiresAt])
+}

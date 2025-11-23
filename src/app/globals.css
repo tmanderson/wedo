@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #e0e7ff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #f3f4f6;
+    --primary: #6366f1;
+    --primary-hover: #818cf8;
+    --primary-light: #1e1b4b;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+/* Improve input contrast */
+input::placeholder {
+  color: #9ca3af;
+}
+
+input,
+select,
+textarea {
+  color: #111827;
+}
+
+/* Focus states with indigo */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
