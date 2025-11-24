@@ -100,8 +100,7 @@ export default function RegistryPage() {
 
     fetchUserProfile();
     fetchRegistry();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id, registryId]);
+  }, [authLoading, user?.id, registryId]); // router and user are intentionally excluded to prevent re-fetching
 
   if (authLoading || loading) {
     return (

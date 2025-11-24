@@ -80,8 +80,7 @@ export default function DashboardPage() {
     }
 
     initializeDashboard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id]);
+  }, [authLoading, user?.id]); // router and user are intentionally excluded to prevent re-fetching
 
   const handleSignOut = async () => {
     await signOut();

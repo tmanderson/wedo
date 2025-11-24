@@ -1,4 +1,5 @@
 import { PrismaClient, CollaboratorStatus } from "@prisma/client";
+import { randomBytes } from "crypto";
 import { Errors } from "@/lib/errors";
 import type { CreateRegistryInput } from "@/lib/validation";
 import { sendMagicLinkInvite } from "@/lib/supabaseAdmin";
@@ -95,7 +96,7 @@ export async function createRegistry(
         }
 
         // Create invite token for this member
-        const token = require("crypto").randomBytes(32).toString("hex");
+        const token = randomBytes(32).toString("hex");
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
 
