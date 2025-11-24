@@ -1,6 +1,7 @@
 import { PrismaClient, CollaboratorStatus } from "@prisma/client";
 import { Errors } from "@/lib/errors";
 import type { CreateRegistryInput } from "@/lib/validation";
+import { sendMagicLinkInvite } from "@/lib/supabaseAdmin";
 
 const prisma = new PrismaClient();
 
@@ -18,13 +19,14 @@ export interface RegistryCreateResult {
 
 /**
  * Creates a new registry with owner collaborator and sublist
+ * Optionally creates initial members with their items and sends invite emails
  */
 export async function createRegistry(
   userId: string,
   userEmail: string,
   data: CreateRegistryInput,
 ): Promise<RegistryCreateResult> {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Create the registry
     const registry = await tx.registry.create({
       data: {
@@ -55,6 +57,71 @@ export async function createRegistry(
       },
     });
 
+    // Create initial members with their items if provided
+    if (data.initialMembers && data.initialMembers.length > 0) {
+      for (const member of data.initialMembers) {
+        const normalizedEmail = member.email.toLowerCase();
+
+        // Create collaborator (PENDING status)
+        const memberCollaborator = await tx.collaborator.create({
+          data: {
+            registryId: registry.id,
+            email: normalizedEmail,
+            name: member.name || null,
+            status: CollaboratorStatus.PENDING,
+          },
+        });
+
+        // Create member's sublist
+        const memberSublist = await tx.subList.create({
+          data: {
+            registryId: registry.id,
+            collaboratorId: memberCollaborator.id,
+          },
+        });
+
+        // Create items for this member if any provided
+        if (member.items && member.items.length > 0) {
+          for (const item of member.items) {
+            await tx.item.create({
+              data: {
+                sublistId: memberSublist.id,
+                label: item.label || null,
+                url: item.url || null,
+                createdByUserId: userId, // Created by the registry owner
+              },
+            });
+          }
+        }
+
+        // Create invite token for this member
+        const token = require("crypto").randomBytes(32).toString("hex");
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
+
+        await tx.inviteToken.create({
+          data: {
+            token,
+            registryId: registry.id,
+            collaboratorId: memberCollaborator.id,
+            email: normalizedEmail,
+            expiresAt,
+            createdByUserId: userId,
+          },
+        });
+
+        // Send invite email (async, don't wait)
+        const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+        const redirectUrl = `${appBaseUrl}/accept-invite/${token}`;
+        sendMagicLinkInvite(normalizedEmail, redirectUrl).catch((err) => {
+          console.error(
+            `Failed to send invite email to ${normalizedEmail}:`,
+            err,
+          );
+        });
+      }
+    }
+
     return {
       id: registry.id,
       title: registry.title,
@@ -67,6 +134,8 @@ export async function createRegistry(
       sublistId: sublist.id,
     };
   });
+
+  return result;
 }
 
 /**

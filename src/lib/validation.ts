@@ -104,6 +104,29 @@ export const createRegistrySchema = z.object({
   occasionDate: schemas.isoDateOptional,
   deadline: schemas.isoDateOptional,
   collaboratorsCanInvite: z.boolean().default(false),
+  initialMembers: z
+    .array(
+      z.object({
+        email: schemas.email,
+        name: z.string().max(100).optional().nullable(),
+        items: z
+          .array(
+            z.object({
+              label: z.string().max(500).optional().nullable(),
+              url: z
+                .string()
+                .transform((val) => (val === "" ? null : val))
+                .pipe(z.string().url("Invalid URL format").nullable())
+                .optional()
+                .nullable(),
+            }),
+          )
+          .optional()
+          .default([]),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 export type CreateRegistryInput = z.infer<typeof createRegistrySchema>;
