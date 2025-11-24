@@ -104,8 +104,9 @@ async function createSingleInvite(
     });
 
     // Send magic link email via Supabase
+    // Use path parameter instead of query parameter to preserve token through Supabase redirect
     const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
-    const redirectUrl = `${appBaseUrl}/accept-invite?token=${token}`;
+    const redirectUrl = `${appBaseUrl}/accept-invite/${token}`;
 
     try {
       await sendMagicLinkInvite(email, redirectUrl);
