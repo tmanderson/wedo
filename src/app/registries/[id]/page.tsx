@@ -174,12 +174,12 @@ export default function RegistryPage() {
           Back to Dashboard
         </button>
 
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+        <div className="flex justify-between items-start mb-8 gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 break-words">
               {registry.title}
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 mt-1 break-words">
               Created by {registry.owner.name || registry.owner.email}
               {registry.occasionDate &&
                 ` · ${new Date(registry.occasionDate).toLocaleDateString()}`}
@@ -276,8 +276,8 @@ function CollaboratorSublist({
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6">
       <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-gray-900 break-words">
             {displayName}&apos;s List
             {collaborator.isViewer && (
               <span className="text-sm text-indigo-600 ml-2 font-medium">
@@ -453,41 +453,41 @@ function ItemRow({
 
   return (
     <div
-      className={`flex items-center justify-between p-4 rounded-lg transition-opacity ${isLoading ? "opacity-70" : ""} ${isDeleted ? "bg-red-50 border border-red-200" : "bg-gray-50"}`}
+      className={`flex items-center justify-between p-4 rounded-lg transition-opacity gap-4 ${isLoading ? "opacity-70" : ""} ${isDeleted ? "bg-red-50 border border-red-200" : "bg-gray-50"}`}
     >
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           {item.url ? (
             <a
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-600 font-medium hover:text-indigo-700 hover:underline"
+              className="text-indigo-600 font-medium hover:text-indigo-700 hover:underline break-words"
             >
               {displayName}
             </a>
           ) : (
-            <span className="text-gray-900">{displayName}</span>
+            <span className="text-gray-900 break-words">{displayName}</span>
           )}
           {isDeleted && (
-            <span className="text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded font-medium">
+            <span className="text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded font-medium whitespace-nowrap">
               Deleted by owner
             </span>
           )}
           {!isOwner && item.status === "CLAIMED" && (
-            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium">
+            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium break-words">
               Claimed by {item.claimedByUser?.name || item.claimedByUser?.email}
             </span>
           )}
           {!isOwner && item.status === "BOUGHT" && (
-            <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded font-medium">
+            <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded font-medium break-words">
               Bought by {item.claimedByUser?.name || item.claimedByUser?.email}
             </span>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2 ml-4 items-center">
+      <div className="flex gap-2 items-center flex-shrink-0">
         {isOwner && !isDeleted && (
           <button
             onClick={handleDelete}

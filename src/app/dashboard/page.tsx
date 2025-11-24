@@ -180,19 +180,19 @@ export default function DashboardPage() {
                 href={`/registries/${registry.id}`}
                 className="block bg-white border border-gray-200 rounded-xl p-6 hover:border-indigo-300 hover:shadow-md transition-all"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-semibold text-gray-900 break-words">
                       {registry.title}
                     </h2>
-                    <p className="text-gray-600 text-sm mt-1">
+                    <p className="text-gray-600 text-sm mt-1 break-words">
                       {registry.isOwner
                         ? "You own this registry"
                         : `Created by ${registry.owner.name || registry.owner.email}`}
                     </p>
                   </div>
-                  <div className="text-right text-sm">
-                    <div className="text-gray-900 font-medium">
+                  <div className="text-right text-sm flex-shrink-0">
+                    <div className="text-gray-900 font-medium whitespace-nowrap">
                       {registry.collaboratorCount} collaborator
                       {registry.collaboratorCount !== 1 ? "s" : ""}
                     </div>
