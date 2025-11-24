@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Snow from "@/components/Snow";
 
 export const metadata: Metadata = {
   title: "WeDo - Collaborative Gift Registry",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Snow />
+        <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
+      </body>
     </html>
   );
 }
