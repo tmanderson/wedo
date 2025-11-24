@@ -62,7 +62,8 @@ export default function DashboardPage() {
     }
 
     initializeDashboard();
-  }, [user, authLoading, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   const handleSignOut = async () => {
     await signOut();

@@ -78,7 +78,8 @@ export default function RegistryPage() {
       return;
     }
     fetchRegistry();
-  }, [user, authLoading, router, fetchRegistry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id, registryId]);
 
   if (authLoading || loading) {
     return (
