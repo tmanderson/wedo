@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/fetcher";
+import ProfileEditModal from "@/components/ProfileEditModal";
 
 interface Registry {
   id: string;
@@ -29,6 +30,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -46,6 +49,21 @@ export default function DashboardPage() {
       } catch {
         // Silently ignore errors - this is a best-effort operation
         console.error("Failed to check for pending invites");
+      }
+
+      // Fetch user profile to get their name
+      try {
+        const { data: profileData } = await api.get<{
+          id: string;
+          email: string;
+          name: string | null;
+          createdAt: string;
+        }>("/api/user/profile");
+        if (profileData) {
+          setUserName(profileData.name);
+        }
+      } catch {
+        console.error("Failed to fetch user profile");
       }
 
       // Then fetch registries (which will now include any newly accepted invites)
@@ -92,7 +110,12 @@ export default function DashboardPage() {
             WeDo
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600 text-sm">{user.email}</span>
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+            >
+              {userName || user.email}
+            </button>
             <button
               onClick={handleSignOut}
               className="text-gray-500 hover:text-gray-700 text-sm font-medium"
@@ -202,6 +225,15 @@ export default function DashboardPage() {
               setShowCreateModal(false);
               router.push(`/registries/${registry.id}`);
             }}
+          />
+        )}
+
+        {showProfileModal && (
+          <ProfileEditModal
+            userEmail={user.email!}
+            userName={userName}
+            onClose={() => setShowProfileModal(false)}
+            onUpdate={(name) => setUserName(name)}
           />
         )}
       </div>

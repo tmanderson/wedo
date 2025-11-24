@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/fetcher";
+import ProfileEditModal from "@/components/ProfileEditModal";
 
 interface Item {
   id: string;
@@ -58,6 +59,8 @@ export default function RegistryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const fetchRegistry = useCallback(async () => {
     const { data, error: apiError } = await api.get<Registry>(
@@ -77,6 +80,25 @@ export default function RegistryPage() {
       router.push("/auth/signin");
       return;
     }
+
+    // Fetch user profile to get their name
+    async function fetchUserProfile() {
+      try {
+        const { data: profileData } = await api.get<{
+          id: string;
+          email: string;
+          name: string | null;
+          createdAt: string;
+        }>("/api/user/profile");
+        if (profileData) {
+          setUserName(profileData.name);
+        }
+      } catch {
+        console.error("Failed to fetch user profile");
+      }
+    }
+
+    fetchUserProfile();
     fetchRegistry();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id, registryId]);
@@ -113,9 +135,22 @@ export default function RegistryPage() {
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-indigo-600">
+          <Link
+            href="/dashboard"
+            className="text-2xl font-bold text-indigo-600"
+          >
             WeDo
           </Link>
+          {user && (
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
+              >
+                {userName || user.email}
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -178,6 +213,15 @@ export default function RegistryPage() {
             registryId={registry.id}
             onClose={() => setShowInviteModal(false)}
             onInvited={fetchRegistry}
+          />
+        )}
+
+        {showProfileModal && user && (
+          <ProfileEditModal
+            userEmail={user.email!}
+            userName={userName}
+            onClose={() => setShowProfileModal(false)}
+            onUpdate={(name) => setUserName(name)}
           />
         )}
       </div>

@@ -149,6 +149,15 @@ export const createInviteSchema = z.object({
 export type CreateInviteInput = z.infer<typeof createInviteSchema>;
 
 /**
+ * User profile update schema
+ */
+export const updateUserProfileSchema = z.object({
+  name: z.string().max(100, "Name is too long").optional().nullable(),
+});
+
+export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
+
+/**
  * Item creation schema
  */
 export const createItemSchema = z
