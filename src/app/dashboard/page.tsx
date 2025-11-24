@@ -38,7 +38,17 @@ export default function DashboardPage() {
       return;
     }
 
-    async function fetchRegistries() {
+    async function initializeDashboard() {
+      // First, accept any pending invites for this user's email
+      // This handles the case where Supabase redirected without preserving the invite token
+      try {
+        await api.post("/api/invite/accept-pending", {});
+      } catch {
+        // Silently ignore errors - this is a best-effort operation
+        console.error("Failed to check for pending invites");
+      }
+
+      // Then fetch registries (which will now include any newly accepted invites)
       const { data, error } =
         await api.get<RegistriesResponse>("/api/registries");
 
@@ -51,7 +61,7 @@ export default function DashboardPage() {
       setLoading(false);
     }
 
-    fetchRegistries();
+    initializeDashboard();
   }, [user, authLoading, router]);
 
   const handleSignOut = async () => {

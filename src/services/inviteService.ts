@@ -280,8 +280,94 @@ export async function getInviteTokenInfo(token: string) {
   };
 }
 
+/**
+ * Accepts all pending invites for a user by their email address.
+ * This is used when the user authenticates but the invite token wasn't preserved
+ * in the redirect URL (e.g., Supabase strips query params).
+ */
+export async function acceptPendingInvitesByEmail(
+  userId: string,
+  userEmail: string,
+) {
+  const normalizedEmail = userEmail.toLowerCase();
+
+  // Find all pending collaborator records for this email
+  const pendingCollaborators = await prisma.collaborator.findMany({
+    where: {
+      email: normalizedEmail,
+      status: CollaboratorStatus.PENDING,
+      userId: null, // Not yet linked to a user
+    },
+    include: {
+      registry: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+      sublist: true,
+    },
+  });
+
+  if (pendingCollaborators.length === 0) {
+    return { accepted: [], count: 0 };
+  }
+
+  // Accept all pending invites in a transaction
+  const accepted = await prisma.$transaction(async (tx) => {
+    const results = [];
+
+    for (const collaborator of pendingCollaborators) {
+      // Update collaborator to accepted
+      const updated = await tx.collaborator.update({
+        where: { id: collaborator.id },
+        data: {
+          userId,
+          status: CollaboratorStatus.ACCEPTED,
+          acceptedAt: new Date(),
+        },
+        include: {
+          registry: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          sublist: true,
+        },
+      });
+
+      // Mark any unused tokens for this collaborator as used
+      await tx.inviteToken.updateMany({
+        where: {
+          collaboratorId: collaborator.id,
+          used: false,
+        },
+        data: {
+          used: true,
+        },
+      });
+
+      results.push({
+        collaboratorId: updated.id,
+        registryId: updated.registry.id,
+        registryTitle: updated.registry.title,
+        sublistId: updated.sublist?.id,
+      });
+    }
+
+    return results;
+  });
+
+  return {
+    accepted,
+    count: accepted.length,
+  };
+}
+
 export default {
   createInviteTokens,
   validateAndConsumeInviteToken,
   getInviteTokenInfo,
+  acceptPendingInvitesByEmail,
 };
