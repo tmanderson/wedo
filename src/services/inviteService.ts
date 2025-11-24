@@ -67,7 +67,9 @@ async function createSingleInvite(
   name: string | null,
   createdByUserId: string,
 ): Promise<InviteResult> {
-  return prisma.$transaction(async (tx) => {
+  const token = generateToken();
+
+  const result = await prisma.$transaction(async (tx) => {
     // Create or get collaborator
     const { collaborator, isNew } = await createCollaboratorInTx(
       tx,
@@ -88,7 +90,6 @@ async function createSingleInvite(
     });
 
     // Create new invite token
-    const token = generateToken();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + INVITE_TOKEN_EXPIRY_DAYS);
 
@@ -103,18 +104,6 @@ async function createSingleInvite(
       },
     });
 
-    // Send magic link email via Supabase
-    // Use path parameter instead of query parameter to preserve token through Supabase redirect
-    const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
-    const redirectUrl = `${appBaseUrl}/accept-invite/${token}`;
-
-    try {
-      await sendMagicLinkInvite(email, redirectUrl);
-    } catch (emailError) {
-      // Log but don't fail - token is still created
-      console.error("Failed to send invite email:", emailError);
-    }
-
     return {
       email,
       success: true,
@@ -122,6 +111,39 @@ async function createSingleInvite(
       isNew,
     };
   });
+
+  // Send magic link email after transaction completes
+  // Only send if user hasn't received an invite in the last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const recentInvite = await prisma.inviteToken.findFirst({
+    where: {
+      email,
+      createdAt: {
+        gte: sevenDaysAgo,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  if (recentInvite && recentInvite.token !== token) {
+    console.log(
+      `Skipping invite email for ${email} - already invited within last 7 days (last invite: ${recentInvite.createdAt.toISOString()})`,
+    );
+  } else {
+    // Send the invite email
+    const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    const redirectUrl = `${appBaseUrl}/accept-invite/${token}`;
+
+    sendMagicLinkInvite(email, redirectUrl).catch((emailError) => {
+      console.error("Failed to send invite email:", emailError);
+    });
+  }
+
+  return result;
 }
 
 /**

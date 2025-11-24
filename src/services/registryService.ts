@@ -27,6 +27,9 @@ export async function createRegistry(
   userEmail: string,
   data: CreateRegistryInput,
 ): Promise<RegistryCreateResult> {
+  // Track invites to send after transaction
+  const invitesToSend: Array<{ email: string; token: string }> = [];
+
   const result = await prisma.$transaction(async (tx) => {
     // Create the registry
     const registry = await tx.registry.create({
@@ -111,15 +114,8 @@ export async function createRegistry(
           },
         });
 
-        // Send invite email (async, don't wait)
-        const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
-        const redirectUrl = `${appBaseUrl}/accept-invite/${token}`;
-        sendMagicLinkInvite(normalizedEmail, redirectUrl).catch((err) => {
-          console.error(
-            `Failed to send invite email to ${normalizedEmail}:`,
-            err,
-          );
-        });
+        // Queue invite to send after transaction completes
+        invitesToSend.push({ email: normalizedEmail, token });
       }
     }
 
@@ -135,6 +131,40 @@ export async function createRegistry(
       sublistId: sublist.id,
     };
   });
+
+  // Send invite emails after transaction completes successfully
+  // Only send if user hasn't received an invite in the last 7 days
+  const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  for (const invite of invitesToSend) {
+    // Check if this email has received any invite in the last 7 days
+    const recentInvite = await prisma.inviteToken.findFirst({
+      where: {
+        email: invite.email,
+        createdAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (recentInvite) {
+      console.log(
+        `Skipping invite email for ${invite.email} - already invited within last 7 days (last invite: ${recentInvite.createdAt.toISOString()})`,
+      );
+      continue;
+    }
+
+    // Send the invite email
+    const redirectUrl = `${appBaseUrl}/accept-invite/${invite.token}`;
+    sendMagicLinkInvite(invite.email, redirectUrl).catch((err) => {
+      console.error(`Failed to send invite email to ${invite.email}:`, err);
+    });
+  }
 
   return result;
 }
