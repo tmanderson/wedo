@@ -42,25 +42,26 @@ export async function sendMagicLinkInvite(
   if (error) {
     // If user already exists, send them a magic link instead
     if (error.message?.includes("already been registered")) {
-      const { error: magicLinkError } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
+      // Use signInWithOtp to send a magic link email to existing users
+      // We need to use the anon client for this since admin.generateLink doesn't send emails
+      const anonClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+
+      const { error: otpError } = await anonClient.auth.signInWithOtp({
         email,
         options: {
-          redirectTo,
+          emailRedirectTo: redirectTo,
         },
       });
 
-      if (magicLinkError) {
-        console.error("Failed to generate magic link:", magicLinkError);
-        throw new Error(`Failed to send invite: ${magicLinkError.message}`);
+      if (otpError) {
+        console.error("Failed to send magic link to existing user:", otpError);
+        throw new Error(`Failed to send invite: ${otpError.message}`);
       }
 
-      // generateLink doesn't send email, so we need to use signInWithOtp for existing users
-      // Actually, for existing users we should just let them sign in normally
-      // The invite flow will work when they next visit the accept-invite page
-      console.log(
-        `User ${email} already exists, invite token created for manual sign-in`,
-      );
+      console.log(`Magic link sent to existing user ${email}`);
       return;
     }
 
