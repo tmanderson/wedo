@@ -134,6 +134,12 @@ export async function softDeleteItem(itemId: string, userId: string) {
     throw Errors.itemDeleted();
   }
 
+  if (!item.claimedByUserId) {
+    return prisma.item.delete({
+      where: { id: itemId },
+    });
+  }
+
   return prisma.item.update({
     where: { id: itemId },
     data: {
