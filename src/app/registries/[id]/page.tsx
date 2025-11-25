@@ -8,11 +8,13 @@ import { api } from "@/lib/fetcher";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import RegistrySettingsModal from "@/components/RegistrySettingsModal";
 import EditSublistModal from "@/components/EditSublistModal";
+import EditItemModal from "@/components/EditItemModal";
 
 interface Item {
   id: string;
   label: string | null;
   url: string | null;
+  description: string | null;
   parsedTitle: string | null;
   createdAt: string;
   deletedAt: string | null;
@@ -233,6 +235,7 @@ function CollaboratorSublist({
   const [showEditModal, setShowEditModal] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState("");
   const [newItemUrl, setNewItemUrl] = useState("");
+  const [newItemDescription, setNewItemDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const displayName =
@@ -249,9 +252,11 @@ function CollaboratorSublist({
     await api.post(`/api/sublists/${collaborator.sublist.id}/items`, {
       label: newItemLabel || null,
       url: newItemUrl || null,
+      description: newItemDescription || null,
     });
     setNewItemLabel("");
     setNewItemUrl("");
+    setNewItemDescription("");
     setShowAddItem(false);
     setSubmitting(false);
     onUpdate();
@@ -357,6 +362,15 @@ function CollaboratorSublist({
                   className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
                 />
               </div>
+              <div className="mb-3">
+                <textarea
+                  placeholder="Description (optional)"
+                  value={newItemDescription}
+                  onChange={(e) => setNewItemDescription(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                />
+              </div>
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -447,6 +461,7 @@ function ItemRow({
   const [actionLoading, setActionLoading] = useState<
     "claim" | "release" | "bought" | "delete" | null
   >(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const displayName =
     item.parsedTitle || item.label || item.url || "Unnamed item";
@@ -483,97 +498,126 @@ function ItemRow({
   };
 
   return (
-    <div
-      className={`flex items-center justify-between p-4 rounded-lg transition-opacity gap-4 ${isLoading ? "opacity-70" : ""} ${isDeleted ? "bg-red-50 border border-red-200" : "bg-gray-50"}`}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          {item.url ? (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-600 font-medium hover:text-indigo-700 hover:underline break-words"
-            >
-              {displayName}
-            </a>
-          ) : (
-            <span className="text-gray-900 break-words">{displayName}</span>
+    <>
+      <div
+        className={`flex items-center justify-between p-4 rounded-lg transition-opacity gap-4 ${isLoading ? "opacity-70" : ""} ${isDeleted ? "bg-red-50 border border-red-200" : "bg-gray-50"}`}
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            {item.url ? (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 font-medium hover:text-indigo-700 hover:underline break-words"
+              >
+                {displayName}
+              </a>
+            ) : (
+              <span className="text-gray-900 break-words">{displayName}</span>
+            )}
+            {isDeleted && (
+              <span className="text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded font-medium whitespace-nowrap">
+                Deleted by owner
+              </span>
+            )}
+            {!isOwner && item.status === "CLAIMED" && (
+              <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium break-words">
+                Claimed by{" "}
+                {item.claimedByUser?.name || item.claimedByUser?.email}
+              </span>
+            )}
+            {!isOwner && item.status === "BOUGHT" && (
+              <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded font-medium break-words">
+                Bought by{" "}
+                {item.claimedByUser?.name || item.claimedByUser?.email}
+              </span>
+            )}
+          </div>
+          {item.description && (
+            <p className="text-sm text-gray-500 mt-1 break-words">
+              {item.description}
+            </p>
           )}
-          {isDeleted && (
-            <span className="text-xs text-red-700 bg-red-100 px-2 py-0.5 rounded font-medium whitespace-nowrap">
-              Deleted by owner
-            </span>
+        </div>
+
+        <div className="flex gap-2 items-center flex-shrink-0">
+          {isOwner && !isDeleted && (
+            <>
+              <button
+                onClick={() => setShowEditModal(true)}
+                disabled={isLoading}
+                className="text-gray-600 text-sm font-medium hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                Edit
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="text-red-600 text-sm font-medium hover:text-red-700 disabled:text-red-300 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                {actionLoading === "delete" && (
+                  <LoadingSpinner className="w-3.5 h-3.5" />
+                )}
+                Delete
+              </button>
+            </>
           )}
-          {!isOwner && item.status === "CLAIMED" && (
-            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded font-medium break-words">
-              Claimed by {item.claimedByUser?.name || item.claimedByUser?.email}
-            </span>
-          )}
-          {!isOwner && item.status === "BOUGHT" && (
-            <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded font-medium break-words">
-              Bought by {item.claimedByUser?.name || item.claimedByUser?.email}
-            </span>
+
+          {!isOwner && !isDeleted && item.status !== null && (
+            <>
+              {item.status === "UNCLAIMED" && (
+                <button
+                  onClick={handleClaim}
+                  disabled={isLoading}
+                  className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                >
+                  {actionLoading === "claim" && (
+                    <LoadingSpinner className="w-3.5 h-3.5" />
+                  )}
+                  {actionLoading === "claim" ? "Claiming..." : "Claim"}
+                </button>
+              )}
+              {item.status === "CLAIMED" && item.claimedByUser && (
+                <>
+                  <button
+                    onClick={handleRelease}
+                    disabled={isLoading}
+                    className="text-gray-600 text-sm font-medium hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    {actionLoading === "release" && (
+                      <LoadingSpinner className="w-3.5 h-3.5" />
+                    )}
+                    Release
+                  </button>
+                  <button
+                    onClick={handleMarkBought}
+                    disabled={isLoading}
+                    className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                  >
+                    {actionLoading === "bought" && (
+                      <LoadingSpinner className="w-3.5 h-3.5" />
+                    )}
+                    {actionLoading === "bought" ? "Updating..." : "Mark Bought"}
+                  </button>
+                </>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2 items-center flex-shrink-0">
-        {isOwner && !isDeleted && (
-          <button
-            onClick={handleDelete}
-            disabled={isLoading}
-            className="text-red-600 text-sm font-medium hover:text-red-700 disabled:text-red-300 disabled:cursor-not-allowed flex items-center gap-1.5"
-          >
-            {actionLoading === "delete" && (
-              <LoadingSpinner className="w-3.5 h-3.5" />
-            )}
-            Delete
-          </button>
-        )}
-
-        {!isOwner && !isDeleted && item.status !== null && (
-          <>
-            {item.status === "UNCLAIMED" && (
-              <button
-                onClick={handleClaim}
-                disabled={isLoading}
-                className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-              >
-                {actionLoading === "claim" && (
-                  <LoadingSpinner className="w-3.5 h-3.5" />
-                )}
-                {actionLoading === "claim" ? "Claiming..." : "Claim"}
-              </button>
-            )}
-            {item.status === "CLAIMED" && item.claimedByUser && (
-              <>
-                <button
-                  onClick={handleRelease}
-                  disabled={isLoading}
-                  className="text-gray-600 text-sm font-medium hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5"
-                >
-                  {actionLoading === "release" && (
-                    <LoadingSpinner className="w-3.5 h-3.5" />
-                  )}
-                  Release
-                </button>
-                <button
-                  onClick={handleMarkBought}
-                  disabled={isLoading}
-                  className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                >
-                  {actionLoading === "bought" && (
-                    <LoadingSpinner className="w-3.5 h-3.5" />
-                  )}
-                  {actionLoading === "bought" ? "Updating..." : "Mark Bought"}
-                </button>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+      {showEditModal && (
+        <EditItemModal
+          itemId={item.id}
+          currentLabel={item.label}
+          currentUrl={item.url}
+          currentDescription={item.description}
+          onClose={() => setShowEditModal(false)}
+          onUpdate={onUpdate}
+        />
+      )}
+    </>
   );
 }
 

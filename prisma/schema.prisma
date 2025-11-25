@@ -99,6 +99,7 @@ model Item {
   sublistId       String
   label           String?
   url             String?
+  description     String?
   parsedTitle     String?
   createdByUserId String?
   createdAt       DateTime   @default(now())

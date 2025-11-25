@@ -196,6 +196,7 @@ export const createItemSchema = z
   .object({
     label: z.string().max(500).optional().nullable(),
     url: schemas.url,
+    description: z.string().max(1000).optional().nullable(),
   })
   .refine((data) => data.label || data.url, {
     message: "Either label or URL must be provided",
@@ -209,6 +210,7 @@ export type CreateItemInput = z.infer<typeof createItemSchema>;
 export const updateItemSchema = z.object({
   label: z.string().max(500).optional().nullable(),
   url: schemas.url,
+  description: z.string().max(1000).optional().nullable(),
 });
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;

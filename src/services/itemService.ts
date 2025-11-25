@@ -40,6 +40,7 @@ export async function createItem(
       sublistId,
       label: data.label || null,
       url: data.url || null,
+      description: data.description || null,
       parsedTitle,
       createdByUserId,
     },
@@ -94,6 +95,8 @@ export async function updateItem(
     data: {
       label: data.label !== undefined ? data.label : item.label,
       url: data.url !== undefined ? data.url : item.url,
+      description:
+        data.description !== undefined ? data.description : item.description,
       parsedTitle,
     },
     include: {
