@@ -575,7 +575,7 @@ function ItemRow({
   onUpdate,
 }: {
   item: Item;
-  ownerName: string;
+  ownerName: string | null;
   isOwner: boolean;
   onUpdate: () => void;
 }) {
