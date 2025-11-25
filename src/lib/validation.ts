@@ -79,10 +79,24 @@ export const schemas = {
   // Non-empty string
   nonEmptyString: z.string().min(1, "This field is required"),
 
-  // Optional ISO date string
+  // Optional ISO date string (accepts YYYY-MM-DD or full ISO datetime)
   isoDateOptional: z
     .string()
-    .datetime({ message: "Invalid date format. Use ISO 8601 format." })
+    .refine(
+      (val) => {
+        if (!val) return true;
+        // Accept YYYY-MM-DD format
+        const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateOnlyRegex.test(val)) {
+          const date = new Date(val);
+          return !isNaN(date.getTime());
+        }
+        // Accept full ISO datetime
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+      },
+      { message: "Invalid date format. Use YYYY-MM-DD or ISO 8601 format." },
+    )
     .optional()
     .nullable(),
 
