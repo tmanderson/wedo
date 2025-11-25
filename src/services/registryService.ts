@@ -36,114 +36,124 @@ export async function createRegistry(
 
   let result;
   try {
-    result = await prisma.$transaction(async (tx) => {
-      console.log(`[createRegistry] Transaction started`);
-      // Create the registry
-      const registry = await tx.registry.create({
-        data: {
-          title: data.title,
-          occasionDate: data.occasionDate ? new Date(data.occasionDate) : null,
-          deadline: data.deadline ? new Date(data.deadline) : null,
-          ownerId: userId,
-          collaboratorsCanInvite: data.collaboratorsCanInvite ?? false,
-        },
-      });
+    result = await prisma.$transaction(
+      async (tx) => {
+        console.log(`[createRegistry] Transaction started`);
+        // Create the registry
+        const registry = await tx.registry.create({
+          data: {
+            title: data.title,
+            occasionDate: data.occasionDate
+              ? new Date(data.occasionDate)
+              : null,
+            deadline: data.deadline ? new Date(data.deadline) : null,
+            ownerId: userId,
+            collaboratorsCanInvite: data.collaboratorsCanInvite ?? false,
+          },
+        });
 
-      // Create owner's collaborator entry (ACCEPTED)
-      const collaborator = await tx.collaborator.create({
-        data: {
-          registryId: registry.id,
-          userId: userId,
-          email: userEmail,
-          status: CollaboratorStatus.ACCEPTED,
-          acceptedAt: new Date(),
-        },
-      });
+        // Create owner's collaborator entry (ACCEPTED)
+        const collaborator = await tx.collaborator.create({
+          data: {
+            registryId: registry.id,
+            userId: userId,
+            email: userEmail,
+            status: CollaboratorStatus.ACCEPTED,
+            acceptedAt: new Date(),
+          },
+        });
 
-      // Create owner's sublist
-      const sublist = await tx.subList.create({
-        data: {
-          registryId: registry.id,
-          collaboratorId: collaborator.id,
-        },
-      });
+        // Create owner's sublist
+        const sublist = await tx.subList.create({
+          data: {
+            registryId: registry.id,
+            collaboratorId: collaborator.id,
+          },
+        });
 
-      // Create initial members with their items if provided
-      if (data.initialMembers && data.initialMembers.length > 0) {
-        console.log(
-          `[createRegistry] Processing ${data.initialMembers.length} members`,
-        );
-        for (const member of data.initialMembers) {
-          const normalizedEmail = member.email.toLowerCase();
-          console.log(`[createRegistry] Creating member: ${normalizedEmail}`);
+        // Create initial members with their items if provided
+        if (data.initialMembers && data.initialMembers.length > 0) {
+          console.log(
+            `[createRegistry] Processing ${data.initialMembers.length} members`,
+          );
+          for (const member of data.initialMembers) {
+            const normalizedEmail = member.email.toLowerCase();
+            console.log(`[createRegistry] Creating member: ${normalizedEmail}`);
 
-          // Create collaborator (PENDING status)
-          const memberCollaborator = await tx.collaborator.create({
-            data: {
-              registryId: registry.id,
-              email: normalizedEmail,
-              name: member.name || null,
-              status: CollaboratorStatus.PENDING,
-            },
-          });
+            // Create collaborator (PENDING status)
+            const memberCollaborator = await tx.collaborator.create({
+              data: {
+                registryId: registry.id,
+                email: normalizedEmail,
+                name: member.name || null,
+                status: CollaboratorStatus.PENDING,
+              },
+            });
 
-          // Create member's sublist
-          const memberSublist = await tx.subList.create({
-            data: {
-              registryId: registry.id,
-              collaboratorId: memberCollaborator.id,
-            },
-          });
+            // Create member's sublist
+            const memberSublist = await tx.subList.create({
+              data: {
+                registryId: registry.id,
+                collaboratorId: memberCollaborator.id,
+              },
+            });
 
-          // Create items for this member if any provided
-          if (member.items && member.items.length > 0) {
-            for (const item of member.items) {
-              await tx.item.create({
-                data: {
-                  sublistId: memberSublist.id,
-                  label: item.label || null,
-                  url: item.url || null,
-                  createdByUserId: userId, // Created by the registry owner
-                },
-              });
+            // Create items for this member if any provided
+            if (member.items && member.items.length > 0) {
+              for (const item of member.items) {
+                await tx.item.create({
+                  data: {
+                    sublistId: memberSublist.id,
+                    label: item.label || null,
+                    url: item.url || null,
+                    createdByUserId: userId, // Created by the registry owner
+                  },
+                });
+              }
             }
+
+            // Create invite token for this member
+            const token = randomBytes(32).toString("hex");
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
+
+            await tx.inviteToken.create({
+              data: {
+                token,
+                registryId: registry.id,
+                collaboratorId: memberCollaborator.id,
+                email: normalizedEmail,
+                expiresAt,
+                createdByUserId: userId,
+              },
+            });
+
+            // Queue invite to send after transaction completes
+            invitesToSend.push({ email: normalizedEmail, token });
+            console.log(`[createRegistry] Member created: ${normalizedEmail}`);
           }
-
-          // Create invite token for this member
-          const token = randomBytes(32).toString("hex");
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
-
-          await tx.inviteToken.create({
-            data: {
-              token,
-              registryId: registry.id,
-              collaboratorId: memberCollaborator.id,
-              email: normalizedEmail,
-              expiresAt,
-              createdByUserId: userId,
-            },
-          });
-
-          // Queue invite to send after transaction completes
-          invitesToSend.push({ email: normalizedEmail, token });
-          console.log(`[createRegistry] Member created: ${normalizedEmail}`);
         }
-      }
 
-      console.log(`[createRegistry] Transaction completing - returning result`);
-      return {
-        id: registry.id,
-        title: registry.title,
-        occasionDate: registry.occasionDate,
-        deadline: registry.deadline,
-        ownerId: registry.ownerId,
-        collaboratorsCanInvite: registry.collaboratorsCanInvite,
-        createdAt: registry.createdAt,
-        collaboratorId: collaborator.id,
-        sublistId: sublist.id,
-      };
-    });
+        console.log(
+          `[createRegistry] Transaction completing - returning result`,
+        );
+        return {
+          id: registry.id,
+          title: registry.title,
+          occasionDate: registry.occasionDate,
+          deadline: registry.deadline,
+          ownerId: registry.ownerId,
+          collaboratorsCanInvite: registry.collaboratorsCanInvite,
+          createdAt: registry.createdAt,
+          collaboratorId: collaborator.id,
+          sublistId: sublist.id,
+        };
+      },
+      {
+        maxWait: 10000, // Wait up to 10 seconds to start transaction
+        timeout: 20000, // Allow transaction to run for up to 20 seconds
+      },
+    );
   } catch (error) {
     console.error(`[createRegistry] Transaction failed:`, error);
     throw error; // Re-throw to let the API route handle it
