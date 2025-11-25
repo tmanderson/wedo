@@ -175,11 +175,14 @@ async function createCollaboratorInTx(
     },
   });
 
-  // Create their sublist
+  // Create their sublist with default name
+  const defaultListName = name ? `${name}'s List` : `${email}'s List`;
   await tx.subList.create({
     data: {
       registryId,
       collaboratorId: collaborator.id,
+      name: defaultListName,
+      description: null,
     },
   });
 

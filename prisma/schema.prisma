@@ -81,6 +81,8 @@ model SubList {
   id             String   @id @default(uuid())
   registryId     String
   collaboratorId String   @unique
+  name           String?
+  description    String?
   createdAt      DateTime @default(now())
 
   // Relations

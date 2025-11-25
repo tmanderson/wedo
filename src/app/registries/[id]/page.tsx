@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/fetcher";
 import ProfileEditModal from "@/components/ProfileEditModal";
 import RegistrySettingsModal from "@/components/RegistrySettingsModal";
+import EditSublistModal from "@/components/EditSublistModal";
 
 interface Item {
   id: string;
@@ -24,6 +25,8 @@ interface Item {
 
 interface SubList {
   id: string;
+  name: string | null;
+  description: string | null;
   items: Item[];
 }
 
@@ -227,6 +230,7 @@ function CollaboratorSublist({
   onUpdate: () => void;
 }) {
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState("");
   const [newItemUrl, setNewItemUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -234,6 +238,7 @@ function CollaboratorSublist({
   const displayName =
     collaborator.user?.name || collaborator.name || collaborator.email;
   const isPending = collaborator.status === "PENDING";
+  const sublistName = collaborator.sublist?.name || "Untitled List";
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,24 +267,116 @@ function CollaboratorSublist({
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-start mb-4">
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-gray-900 break-words">
-            {displayName}&apos;s List
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-lg font-semibold text-gray-900 break-words">
+              {sublistName}
+            </h2>
             {collaborator.isViewer && (
-              <span className="text-sm text-indigo-600 ml-2 font-medium">
-                (You)
-              </span>
+              <span className="text-sm text-indigo-600 font-medium">(You)</span>
             )}
-          </h2>
+          </div>
+          {collaborator.sublist?.description && (
+            <p className="text-sm text-gray-600 mb-2 break-words">
+              {collaborator.sublist.description}
+            </p>
+          )}
           {isPending && (
             <span className="text-sm text-amber-600">Invite pending</span>
           )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-shrink-0">
           {collaborator.isViewer && (
             <button
-              onClick={() => setShowAddItem(!showAddItem)}
+              onClick={() => setShowEditModal(true)}
+              className="text-gray-600 text-sm font-medium hover:text-gray-900 flex items-center gap-1"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Edit
+            </button>
+          )}
+          {isOwner && !collaborator.isViewer && (
+            <button
+              onClick={handleRemoveCollaborator}
+              className="text-red-600 text-sm font-medium hover:text-red-700"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+
+      {collaborator.sublist?.items.length === 0 && !showAddItem ? (
+        <p className="text-gray-500 text-sm mb-4">No items yet</p>
+      ) : (
+        <div className="space-y-2 mb-4">
+          {collaborator.sublist?.items.map((item) => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              isOwner={collaborator.isViewer}
+              onUpdate={onUpdate}
+            />
+          ))}
+        </div>
+      )}
+
+      {collaborator.isViewer && (
+        <>
+          {showAddItem ? (
+            <form
+              onSubmit={handleAddItem}
+              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                <input
+                  type="text"
+                  placeholder="Item name"
+                  value={newItemLabel}
+                  onChange={(e) => setNewItemLabel(e.target.value)}
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                />
+                <input
+                  type="url"
+                  placeholder="URL (optional)"
+                  value={newItemUrl}
+                  onChange={(e) => setNewItemUrl(e.target.value)}
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={submitting || (!newItemLabel && !newItemUrl)}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:bg-gray-300 hover:bg-indigo-700 transition-colors"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddItem(false)}
+                  className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowAddItem(true)}
               className="text-indigo-600 text-sm font-medium hover:text-indigo-700 flex items-center gap-1"
             >
               <svg
@@ -298,70 +395,17 @@ function CollaboratorSublist({
               Add Item
             </button>
           )}
-          {isOwner && !collaborator.isViewer && (
-            <button
-              onClick={handleRemoveCollaborator}
-              className="text-red-600 text-sm font-medium hover:text-red-700"
-            >
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
-
-      {showAddItem && (
-        <form
-          onSubmit={handleAddItem}
-          className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-            <input
-              type="text"
-              placeholder="Item name"
-              value={newItemLabel}
-              onChange={(e) => setNewItemLabel(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-            />
-            <input
-              type="url"
-              placeholder="URL (optional)"
-              value={newItemUrl}
-              onChange={(e) => setNewItemUrl(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={submitting || (!newItemLabel && !newItemUrl)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:bg-gray-300 hover:bg-indigo-700 transition-colors"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddItem(false)}
-              className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-gray-800"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        </>
       )}
 
-      {collaborator.sublist?.items.length === 0 ? (
-        <p className="text-gray-500 text-sm">No items yet</p>
-      ) : (
-        <div className="space-y-2">
-          {collaborator.sublist?.items.map((item) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              isOwner={collaborator.isViewer}
-              onUpdate={onUpdate}
-            />
-          ))}
-        </div>
+      {showEditModal && collaborator.sublist && (
+        <EditSublistModal
+          sublistId={collaborator.sublist.id}
+          currentName={collaborator.sublist.name}
+          currentDescription={collaborator.sublist.description}
+          onClose={() => setShowEditModal(false)}
+          onUpdate={onUpdate}
+        />
       )}
     </div>
   );

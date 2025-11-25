@@ -9,6 +9,7 @@ interface MemberItem {
 interface InitialMember {
   email: string;
   name: string;
+  description: string;
   items: MemberItem[];
   showItems: boolean;
 }
@@ -32,7 +33,7 @@ function CreateRegistryModal({
   const [collaboratorsCanInvite, setCollaboratorsCanInvite] = useState(false);
   const [addExistingMembers, setAddExistingMembers] = useState(false);
   const [initialMembers, setInitialMembers] = useState<InitialMember[]>([
-    { email: "", name: "", items: [], showItems: false },
+    { email: "", name: "", description: "", items: [], showItems: false },
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,7 @@ function CreateRegistryModal({
   const addMember = () => {
     setInitialMembers([
       ...initialMembers,
-      { email: "", name: "", items: [], showItems: false },
+      { email: "", name: "", description: "", items: [], showItems: false },
     ]);
   };
 
@@ -101,6 +102,7 @@ function CreateRegistryModal({
           .map((m) => ({
             email: m.email.trim(),
             name: m.name.trim() || null,
+            description: m.description.trim() || null,
             items: m.items.filter((i) => i.label.trim() || i.url.trim()),
           }))
       : [];
@@ -241,6 +243,25 @@ function CreateRegistryModal({
                           updateMember(memberIndex, "name", e.target.value)
                         }
                         placeholder="John Doe"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        value={member.description}
+                        onChange={(e) =>
+                          updateMember(
+                            memberIndex,
+                            "description",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Optional description for this list"
+                        rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
                       />
                     </div>

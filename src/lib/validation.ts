@@ -123,6 +123,7 @@ export const createRegistrySchema = z.object({
       z.object({
         email: schemas.email,
         name: z.string().max(100).optional().nullable(),
+        description: z.string().max(1000).optional().nullable(),
         items: z
           .array(
             z.object({

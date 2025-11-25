@@ -65,11 +65,21 @@ export async function createRegistry(
           },
         });
 
-        // Create owner's sublist
+        // Create owner's sublist with default name
+        const ownerName = await tx.user.findUnique({
+          where: { id: userId },
+          select: { name: true },
+        });
+        const defaultOwnerListName = ownerName?.name
+          ? `${ownerName.name}'s List`
+          : `${userEmail}'s List`;
+
         const sublist = await tx.subList.create({
           data: {
             registryId: registry.id,
             collaboratorId: collaborator.id,
+            name: defaultOwnerListName,
+            description: null,
           },
         });
 
@@ -92,11 +102,17 @@ export async function createRegistry(
               },
             });
 
-            // Create member's sublist
+            // Create member's sublist with default name
+            const defaultMemberListName = member.name
+              ? `${member.name}'s List`
+              : `${normalizedEmail}'s List`;
+
             const memberSublist = await tx.subList.create({
               data: {
                 registryId: registry.id,
                 collaboratorId: memberCollaborator.id,
+                name: defaultMemberListName,
+                description: member.description || null,
               },
             });
 
@@ -330,6 +346,8 @@ function applyVisibilityRules(
     const sublist = collaborator.sublist
       ? {
           id: collaborator.sublist.id,
+          name: collaborator.sublist.name,
+          description: collaborator.sublist.description,
           items: collaborator.sublist.items.map((item) => {
             // If viewer owns this sublist, redact claim info
             if (isViewerOwner) {
