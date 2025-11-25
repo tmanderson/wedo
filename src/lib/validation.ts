@@ -132,6 +132,23 @@ export const createRegistrySchema = z.object({
 export type CreateRegistryInput = z.infer<typeof createRegistrySchema>;
 
 /**
+ * Registry update schema
+ */
+export const updateRegistrySchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title is required")
+    .max(200, "Title is too long")
+    .optional(),
+  occasionDate: schemas.isoDateOptional,
+  deadline: schemas.isoDateOptional,
+  collaboratorsCanInvite: z.boolean().optional(),
+  ownerId: schemas.uuid.optional(),
+});
+
+export type UpdateRegistryInput = z.infer<typeof updateRegistrySchema>;
+
+/**
  * Invite creation schema
  */
 export const createInviteSchema = z.object({

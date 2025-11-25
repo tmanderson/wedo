@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/fetcher";
 import ProfileEditModal from "@/components/ProfileEditModal";
+import RegistrySettingsModal from "@/components/RegistrySettingsModal";
 
 interface Item {
   id: string;
@@ -171,7 +172,11 @@ export default function RegistryPage() {
           Back to Dashboard
         </button>
 
-        <RegistryHeader loading={authLoading || loading} registry={registry} />
+        <RegistryHeader
+          loading={authLoading || loading}
+          registry={registry}
+          onRefresh={fetchRegistry}
+        />
 
         <div className="space-y-6">
           {registry &&
@@ -641,11 +646,14 @@ function InviteModal({
 function RegistryHeader({
   loading,
   registry,
+  onRefresh,
 }: {
   loading: boolean;
-  registry?: Registry;
+  registry: Registry | null;
+  onRefresh: () => void;
 }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const canInvite =
     registry && (registry.isOwner || registry.collaboratorsCanInvite);
 
@@ -676,19 +684,46 @@ function RegistryHeader({
               ` · ${new Date(registry.occasionDate).toLocaleDateString()}`}
           </p>
         </div>
-        {canInvite && (
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-          >
-            Invite People
-          </button>
-        )}
+        <div className="flex gap-2 flex-shrink-0">
+          {registry.isOwner && (
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="bg-gray-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+            >
+              Settings
+            </button>
+          )}
+          {canInvite && (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Invite People
+            </button>
+          )}
+        </div>
       </div>
       {showInviteModal && (
         <InviteModal
           registryId={registry.id}
           onClose={() => setShowInviteModal(false)}
+        />
+      )}
+      {showSettingsModal && (
+        <RegistrySettingsModal
+          registryId={registry.id}
+          currentTitle={registry.title}
+          currentOccasionDate={registry.occasionDate}
+          currentDeadline={registry.deadline}
+          currentCollaboratorsCanInvite={registry.collaboratorsCanInvite}
+          currentOwnerId={registry.ownerId}
+          currentOwner={registry.owner}
+          collaborators={registry.collaborators}
+          onClose={() => setShowSettingsModal(false)}
+          onUpdate={() => {
+            setShowSettingsModal(false);
+            onRefresh();
+          }}
         />
       )}
     </>

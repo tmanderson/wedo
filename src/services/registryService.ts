@@ -1,7 +1,10 @@
 import { CollaboratorStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { Errors } from "@/lib/errors";
-import type { CreateRegistryInput } from "@/lib/validation";
+import type {
+  CreateRegistryInput,
+  UpdateRegistryInput,
+} from "@/lib/validation";
 import { sendMagicLinkInvite } from "@/lib/supabaseAdmin";
 import prisma from "@/lib/prisma";
 
@@ -458,9 +461,83 @@ export async function canUserInvite(
   return false;
 }
 
+/**
+ * Updates registry settings
+ * Only the owner can update registry settings
+ */
+export async function updateRegistry(
+  registryId: string,
+  userId: string,
+  data: UpdateRegistryInput,
+) {
+  // Verify user is the owner
+  const registry = await prisma.registry.findUnique({
+    where: { id: registryId },
+  });
+
+  if (!registry) {
+    throw Errors.notFound("Registry");
+  }
+
+  if (registry.ownerId !== userId) {
+    throw Errors.forbidden("Only the registry owner can update settings");
+  }
+
+  // If changing ownership, verify new owner is an accepted collaborator
+  if (data.ownerId && data.ownerId !== registry.ownerId) {
+    const newOwnerCollaborator = await prisma.collaborator.findFirst({
+      where: {
+        registryId,
+        userId: data.ownerId,
+        status: CollaboratorStatus.ACCEPTED,
+      },
+    });
+
+    if (!newOwnerCollaborator) {
+      throw Errors.validation(
+        "New owner must be an accepted collaborator of this registry",
+      );
+    }
+  }
+
+  // Update registry
+  const updated = await prisma.registry.update({
+    where: { id: registryId },
+    data: {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.occasionDate !== undefined && {
+        occasionDate: data.occasionDate ? new Date(data.occasionDate) : null,
+      }),
+      ...(data.deadline !== undefined && {
+        deadline: data.deadline ? new Date(data.deadline) : null,
+      }),
+      ...(data.collaboratorsCanInvite !== undefined && {
+        collaboratorsCanInvite: data.collaboratorsCanInvite,
+      }),
+      ...(data.ownerId !== undefined && { ownerId: data.ownerId }),
+    },
+    include: {
+      owner: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+  });
+
+  return {
+    id: updated.id,
+    title: updated.title,
+    occasionDate: updated.occasionDate,
+    deadline: updated.deadline,
+    collaboratorsCanInvite: updated.collaboratorsCanInvite,
+    ownerId: updated.ownerId,
+    owner: updated.owner,
+  };
+}
+
 export default {
   createRegistry,
   listRegistriesForUser,
   getRegistryForViewer,
   canUserInvite,
+  updateRegistry,
 };
