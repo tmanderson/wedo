@@ -1,7 +1,6 @@
-import { PrismaClient, CollaboratorStatus, ItemStatus } from "@prisma/client";
+import { CollaboratorStatus, ItemStatus } from "@prisma/client";
 import { Errors } from "@/lib/errors";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 /**
  * Creates a new collaborator (PENDING status) and their sublist

@@ -1,10 +1,9 @@
-import { PrismaClient, CollaboratorStatus } from "@prisma/client";
+import { CollaboratorStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { Errors } from "@/lib/errors";
 import type { CreateRegistryInput } from "@/lib/validation";
 import { sendMagicLinkInvite } from "@/lib/supabaseAdmin";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export interface RegistryCreateResult {
   id: string;

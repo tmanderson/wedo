@@ -1,9 +1,8 @@
-import { PrismaClient, CollaboratorStatus } from "@prisma/client";
+import { CollaboratorStatus } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { Errors } from "@/lib/errors";
 import { sendMagicLinkInvite } from "@/lib/supabaseAdmin";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 const INVITE_TOKEN_EXPIRY_DAYS = 30;
 
