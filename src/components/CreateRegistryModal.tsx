@@ -31,6 +31,7 @@ function CreateRegistryModal({
   const [occasionDate, setOccasionDate] = useState("");
   const [deadline, setDeadline] = useState("");
   const [collaboratorsCanInvite, setCollaboratorsCanInvite] = useState(false);
+  const [allowSecretGifts, setAllowSecretGifts] = useState(false);
   const [addExistingMembers, setAddExistingMembers] = useState(false);
   const [initialMembers, setInitialMembers] = useState<InitialMember[]>([
     { email: "", name: "", description: "", items: [], showItems: false },
@@ -118,6 +119,7 @@ function CreateRegistryModal({
       occasionDate: occasionDate ? new Date(occasionDate).toISOString() : null,
       deadline: deadline ? new Date(deadline).toISOString() : null,
       collaboratorsCanInvite,
+      allowSecretGifts,
       initialMembers: validMembers,
     });
 
@@ -191,6 +193,23 @@ function CreateRegistryModal({
                 Allow collaborators to invite others
               </span>
             </label>
+          </div>
+
+          <div className="mb-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allowSecretGifts}
+                onChange={(e) => setAllowSecretGifts(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <span className="ml-3 text-sm text-gray-700">
+                Allow Secret Gifts
+              </span>
+            </label>
+            <p className="ml-7 text-xs text-gray-500 mt-1">
+              Collaborators can add surprise items to other people's lists
+            </p>
           </div>
 
           <div className="mb-6">

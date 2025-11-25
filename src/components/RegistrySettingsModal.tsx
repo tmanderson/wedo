@@ -21,6 +21,7 @@ interface RegistrySettingsModalProps {
   currentOccasionDate: string | null;
   currentDeadline: string | null;
   currentCollaboratorsCanInvite: boolean;
+  currentAllowSecretGifts: boolean;
   currentOwnerId: string;
   currentOwner: {
     id: string;
@@ -38,6 +39,7 @@ export default function RegistrySettingsModal({
   currentOccasionDate,
   currentDeadline,
   currentCollaboratorsCanInvite,
+  currentAllowSecretGifts,
   currentOwnerId,
   currentOwner,
   collaborators,
@@ -54,6 +56,9 @@ export default function RegistrySettingsModal({
   const [collaboratorsCanInvite, setCollaboratorsCanInvite] = useState(
     currentCollaboratorsCanInvite,
   );
+  const [allowSecretGifts, setAllowSecretGifts] = useState(
+    currentAllowSecretGifts,
+  );
   const [ownerId, setOwnerId] = useState(currentOwnerId);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +66,21 @@ export default function RegistrySettingsModal({
 
   useEffect(() => {
     setTitle(currentTitle);
-    setOccasionDate(currentOccasionDate ? currentOccasionDate.split("T")[0] : "");
+    setOccasionDate(
+      currentOccasionDate ? currentOccasionDate.split("T")[0] : "",
+    );
     setDeadline(currentDeadline ? currentDeadline.split("T")[0] : "");
     setCollaboratorsCanInvite(currentCollaboratorsCanInvite);
+    setAllowSecretGifts(currentAllowSecretGifts);
     setOwnerId(currentOwnerId);
-  }, [currentTitle, currentOccasionDate, currentDeadline, currentCollaboratorsCanInvite, currentOwnerId]);
+  }, [
+    currentTitle,
+    currentOccasionDate,
+    currentDeadline,
+    currentCollaboratorsCanInvite,
+    currentAllowSecretGifts,
+    currentOwnerId,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +101,7 @@ export default function RegistrySettingsModal({
         occasionDate: occasionDate || null,
         deadline: deadline || null,
         collaboratorsCanInvite,
+        allowSecretGifts,
         ...(ownerId !== currentOwnerId && { ownerId }),
       },
     );
@@ -182,6 +198,21 @@ export default function RegistrySettingsModal({
             </label>
           </div>
 
+          <div className="mb-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={allowSecretGifts}
+                onChange={(e) => setAllowSecretGifts(e.target.checked)}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="text-sm text-gray-900">Allow Secret Gifts</span>
+            </label>
+            <p className="ml-6 text-xs text-gray-500 mt-1">
+              Collaborators can add surprise items to other people's lists
+            </p>
+          </div>
+
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-900 mb-2">
               Registry Owner
@@ -204,8 +235,7 @@ export default function RegistrySettingsModal({
             </select>
             {ownerId !== currentOwnerId && (
               <p className="text-xs text-red-600 mt-1">
-                Warning: You will lose ownership if you transfer to another
-                user
+                Warning: You will lose ownership if you transfer to another user
               </p>
             )}
           </div>

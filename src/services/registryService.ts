@@ -51,6 +51,7 @@ export async function createRegistry(
             deadline: data.deadline ? new Date(data.deadline) : null,
             ownerId: userId,
             collaboratorsCanInvite: data.collaboratorsCanInvite ?? false,
+            allowSecretGifts: data.allowSecretGifts ?? false,
           },
         });
 
@@ -348,42 +349,51 @@ function applyVisibilityRules(
           id: collaborator.sublist.id,
           name: collaborator.sublist.name,
           description: collaborator.sublist.description,
-          items: collaborator.sublist.items.map((item) => {
-            // If viewer owns this sublist, redact claim info
-            if (isViewerOwner) {
+          items: collaborator.sublist.items
+            .map((item) => {
+              // If viewer owns this sublist, redact claim info and hide secret items
+              if (isViewerOwner) {
+                // Secret items are completely invisible to the owner
+                if (item.isSecret) {
+                  return null;
+                }
+
+                return {
+                  id: item.id,
+                  label: item.label,
+                  url: item.url,
+                  description: item.description,
+                  parsedTitle: item.parsedTitle,
+                  isSecret: item.isSecret,
+                  createdAt: item.createdAt,
+                  deletedAt: item.deletedAt,
+                  deletedByUser: item.deletedByUser,
+                  // Redacted fields for owner
+                  status: null,
+                  claimedByUser: null,
+                  claimedAt: null,
+                  boughtAt: null,
+                };
+              }
+
+              // For other viewers, show full item info
               return {
                 id: item.id,
                 label: item.label,
                 url: item.url,
                 description: item.description,
                 parsedTitle: item.parsedTitle,
+                isSecret: item.isSecret,
                 createdAt: item.createdAt,
                 deletedAt: item.deletedAt,
                 deletedByUser: item.deletedByUser,
-                // Redacted fields for owner
-                status: null,
-                claimedByUser: null,
-                claimedAt: null,
-                boughtAt: null,
+                status: item.status,
+                claimedByUser: item.claimedByUser,
+                claimedAt: item.claimedAt,
+                boughtAt: item.boughtAt,
               };
-            }
-
-            // For other viewers, show full item info
-            return {
-              id: item.id,
-              label: item.label,
-              url: item.url,
-              description: item.description,
-              parsedTitle: item.parsedTitle,
-              createdAt: item.createdAt,
-              deletedAt: item.deletedAt,
-              deletedByUser: item.deletedByUser,
-              status: item.status,
-              claimedByUser: item.claimedByUser,
-              claimedAt: item.claimedAt,
-              boughtAt: item.boughtAt,
-            };
-          }),
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null),
         }
       : null;
 
@@ -407,6 +417,7 @@ function applyVisibilityRules(
     ownerId: registry.ownerId,
     owner: registry.owner,
     collaboratorsCanInvite: registry.collaboratorsCanInvite,
+    allowSecretGifts: registry.allowSecretGifts,
     createdAt: registry.createdAt,
     updatedAt: registry.updatedAt,
     isOwner: registry.ownerId === viewerUserId,
@@ -534,6 +545,9 @@ export async function updateRegistry(
       ...(data.collaboratorsCanInvite !== undefined && {
         collaboratorsCanInvite: data.collaboratorsCanInvite,
       }),
+      ...(data.allowSecretGifts !== undefined && {
+        allowSecretGifts: data.allowSecretGifts,
+      }),
       ...(data.ownerId !== undefined && { ownerId: data.ownerId }),
     },
     include: {
@@ -549,6 +563,7 @@ export async function updateRegistry(
     occasionDate: updated.occasionDate,
     deadline: updated.deadline,
     collaboratorsCanInvite: updated.collaboratorsCanInvite,
+    allowSecretGifts: updated.allowSecretGifts,
     ownerId: updated.ownerId,
     owner: updated.owner,
   };

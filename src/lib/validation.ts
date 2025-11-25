@@ -118,6 +118,7 @@ export const createRegistrySchema = z.object({
   occasionDate: schemas.isoDateOptional,
   deadline: schemas.isoDateOptional,
   collaboratorsCanInvite: z.boolean().default(false),
+  allowSecretGifts: z.boolean().default(false),
   initialMembers: z
     .array(
       z.object({
@@ -158,6 +159,7 @@ export const updateRegistrySchema = z.object({
   occasionDate: schemas.isoDateOptional,
   deadline: schemas.isoDateOptional,
   collaboratorsCanInvite: z.boolean().optional(),
+  allowSecretGifts: z.boolean().optional(),
   ownerId: schemas.uuid.optional(),
 });
 
@@ -197,6 +199,7 @@ export const createItemSchema = z
     label: z.string().max(500).optional().nullable(),
     url: schemas.url,
     description: z.string().max(1000).optional().nullable(),
+    isSecret: z.boolean().default(false),
   })
   .refine((data) => data.label || data.url, {
     message: "Either label or URL must be provided",

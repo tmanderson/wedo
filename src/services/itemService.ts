@@ -6,18 +6,20 @@ import prisma from "@/lib/prisma";
 
 /**
  * Creates a new item on a sublist
- * Only the sublist owner can create items
+ * Sublist owner can always create items
+ * Other collaborators can create secret items if registry allows it
  */
 export async function createItem(
   sublistId: string,
   createdByUserId: string,
   data: CreateItemInput,
 ) {
-  // Verify the user owns this sublist
+  // Verify the sublist exists and get registry info
   const sublist = await prisma.subList.findUnique({
     where: { id: sublistId },
     include: {
       collaborator: true,
+      registry: true,
     },
   });
 
@@ -25,8 +27,37 @@ export async function createItem(
     throw Errors.notFound("Sublist");
   }
 
-  if (sublist.collaborator.userId !== createdByUserId) {
-    throw Errors.forbidden("You can only add items to your own sublist");
+  const isOwner = sublist.collaborator.userId === createdByUserId;
+
+  // If creating a secret item
+  if (data.isSecret) {
+    // Secret items can only be added to other people's lists
+    if (isOwner) {
+      throw Errors.forbidden("You cannot add secret items to your own sublist");
+    }
+
+    // Check if registry allows secret gifts
+    if (!sublist.registry.allowSecretGifts) {
+      throw Errors.forbidden("This registry does not allow secret gifts");
+    }
+
+    // Verify the user is an accepted collaborator
+    const isCollaborator = await prisma.collaborator.findFirst({
+      where: {
+        registryId: sublist.registry.id,
+        userId: createdByUserId,
+        status: "ACCEPTED",
+      },
+    });
+
+    if (!isCollaborator) {
+      throw Errors.forbidden("You must be a collaborator to add secret items");
+    }
+  } else {
+    // Non-secret items can only be added by the sublist owner
+    if (!isOwner) {
+      throw Errors.forbidden("You can only add items to your own sublist");
+    }
   }
 
   // Parse URL title if URL provided
@@ -41,6 +72,7 @@ export async function createItem(
       label: data.label || null,
       url: data.url || null,
       description: data.description || null,
+      isSecret: data.isSecret ?? false,
       parsedTitle,
       createdByUserId,
     },
