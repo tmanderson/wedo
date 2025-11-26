@@ -77,9 +77,10 @@ export default function SignInPage() {
                 We sent a magic link to
                 <br />
                 <strong className="text-gray-900 wrap-break-word">
-                  {email}
+                  {email}.
                 </strong>
-                <br />. Click the link to sign in.
+                <br />
+                Click the link to sign in.
               </p>
             </div>
           ) : (
