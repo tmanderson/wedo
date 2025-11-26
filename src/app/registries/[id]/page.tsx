@@ -219,7 +219,7 @@ function CollaboratorSublist({
   registryId: string;
   isOwner: boolean;
   registry: Registry;
-  onUpdate: () => void;
+  onUpdate: () => Promise<void>;
 }) {
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [isSecretItem, setIsSecretItem] = useState(false);
@@ -523,7 +523,7 @@ function ItemRow({
   item: Item;
   ownerName: string | null;
   isOwner: boolean;
-  onUpdate: () => void;
+  onUpdate: () => Promise<void>;
 }) {
   const [actionLoading, setActionLoading] = useState<
     "claim" | "release" | "bought" | "delete" | null
@@ -542,30 +542,30 @@ function ItemRow({
   const handleClaim = async () => {
     setActionLoading("claim");
     await api.post(`/api/items/${item.id}/claim`);
+    await onUpdate();
     setActionLoading(null);
-    onUpdate();
   };
 
   const handleRelease = async () => {
     setActionLoading("release");
     await api.post(`/api/items/${item.id}/release`);
+    await onUpdate();
     setActionLoading(null);
-    onUpdate();
   };
 
   const handleMarkBought = async () => {
     setActionLoading("bought");
     await api.post(`/api/items/${item.id}/mark-bought`);
+    await onUpdate();
     setActionLoading(null);
-    onUpdate();
   };
 
   const handleDelete = async () => {
     if (!confirm("Delete this item?")) return;
     setActionLoading("delete");
     await api.delete(`/api/items/${item.id}`);
+    await onUpdate();
     setActionLoading(null);
-    onUpdate();
   };
 
   return (
