@@ -620,7 +620,7 @@ function ItemRow({
           )}
         </div>
 
-        <div className="flex gap-2 items-center flex-shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2 items-center flex-shrink-0">
           {isOwner && !isDeleted && (
             <>
               <button
@@ -657,30 +657,35 @@ function ItemRow({
                   {actionLoading === "claim" ? "Claiming..." : "Claim"}
                 </button>
               )}
-              {item.status === "CLAIMED" && item.claimedByUser && (
-                <>
-                  <button
-                    onClick={handleRelease}
-                    disabled={isLoading}
-                    className="text-gray-600 text-sm font-medium hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5"
-                  >
-                    {actionLoading === "release" && (
-                      <LoadingSpinner className="w-3.5 h-3.5" />
+              {(item.status === "CLAIMED" || item.status === "BOUGHT") &&
+                item.claimedByUser && (
+                  <>
+                    <button
+                      onClick={handleRelease}
+                      disabled={isLoading}
+                      className="text-gray-600 self-stretch text-sm border-1 border-gray-400 px-4 py-1.5 rounded-lg font-medium hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 justify-center"
+                    >
+                      {actionLoading === "release" && (
+                        <LoadingSpinner className="w-3.5 h-3.5" />
+                      )}
+                      Release
+                    </button>
+                    {item.status !== "BOUGHT" && (
+                      <button
+                        onClick={handleMarkBought}
+                        disabled={isLoading}
+                        className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                      >
+                        {actionLoading === "bought" && (
+                          <LoadingSpinner className="w-3.5 h-3.5" />
+                        )}
+                        {actionLoading === "bought"
+                          ? "Updating..."
+                          : "Mark Bought"}
+                      </button>
                     )}
-                    Release
-                  </button>
-                  <button
-                    onClick={handleMarkBought}
-                    disabled={isLoading}
-                    className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                  >
-                    {actionLoading === "bought" && (
-                      <LoadingSpinner className="w-3.5 h-3.5" />
-                    )}
-                    {actionLoading === "bought" ? "Updating..." : "Mark Bought"}
-                  </button>
-                </>
-              )}
+                  </>
+                )}
             </>
           )}
         </div>
