@@ -183,17 +183,25 @@ export default function RegistryPage() {
 
         <div className="space-y-6">
           {registry &&
-            registry.collaborators.map((collaborator) => (
-              <CollaboratorSublist
-                key={collaborator.id}
-                viewingUserId={user?.id || null}
-                collaborator={collaborator}
-                registryId={registry.id}
-                isOwner={registry.isOwner}
-                registry={registry}
-                onUpdate={fetchRegistry}
-              />
-            ))}
+            registry.collaborators
+              .slice()
+              .sort((a, b) => {
+                // Current user's sublist (isViewer) should be first
+                if (a.isViewer && !b.isViewer) return -1;
+                if (!a.isViewer && b.isViewer) return 1;
+                return 0;
+              })
+              .map((collaborator) => (
+                <CollaboratorSublist
+                  key={collaborator.id}
+                  viewingUserId={user?.id || null}
+                  collaborator={collaborator}
+                  registryId={registry.id}
+                  isOwner={registry.isOwner}
+                  registry={registry}
+                  onUpdate={fetchRegistry}
+                />
+              ))}
         </div>
 
         {showProfileModal && user && (
