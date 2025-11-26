@@ -221,17 +221,13 @@ function CollaboratorSublist({
   registry: Registry;
   onUpdate: () => void;
 }) {
-  const [showAddItem, setShowAddItem] = useState(false);
-  const [showAddSecretItem, setShowAddSecretItem] = useState(false);
+  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [isSecretItem, setIsSecretItem] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newItemLabel, setNewItemLabel] = useState("");
   const [newItemUrl, setNewItemUrl] = useState("");
   const [newItemDescription, setNewItemDescription] = useState("");
-  const [newSecretItemLabel, setNewSecretItemLabel] = useState("");
-  const [newSecretItemUrl, setNewSecretItemUrl] = useState("");
-  const [newSecretItemDescription, setNewSecretItemDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submittingSecret, setSubmittingSecret] = useState(false);
 
   const displayName =
     collaborator.user?.name || collaborator.name || collaborator.email;
@@ -248,34 +244,26 @@ function CollaboratorSublist({
       label: newItemLabel || null,
       url: newItemUrl || null,
       description: newItemDescription || null,
-      isSecret: false,
+      isSecret: isSecretItem,
     });
     setNewItemLabel("");
     setNewItemUrl("");
     setNewItemDescription("");
-    setShowAddItem(false);
+    setShowAddItemForm(false);
     setSubmitting(false);
     onUpdate();
   };
 
-  const handleAddSecretItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSecretItemLabel && !newSecretItemUrl) return;
-    if (!collaborator.sublist) return;
+  const openAddItemForm = (isSecret: boolean) => {
+    setIsSecretItem(isSecret);
+    setShowAddItemForm(true);
+  };
 
-    setSubmittingSecret(true);
-    await api.post(`/api/sublists/${collaborator.sublist.id}/items`, {
-      label: newSecretItemLabel || null,
-      url: newSecretItemUrl || null,
-      description: newSecretItemDescription || null,
-      isSecret: true,
-    });
-    setNewSecretItemLabel("");
-    setNewSecretItemUrl("");
-    setNewSecretItemDescription("");
-    setShowAddSecretItem(false);
-    setSubmittingSecret(false);
-    onUpdate();
+  const closeAddItemForm = () => {
+    setShowAddItemForm(false);
+    setNewItemLabel("");
+    setNewItemUrl("");
+    setNewItemDescription("");
   };
 
   const handleRemoveCollaborator = async () => {
@@ -340,7 +328,7 @@ function CollaboratorSublist({
         </div>
       </div>
 
-      {collaborator.sublist?.items.length === 0 && !showAddItem ? (
+      {collaborator.sublist?.items.length === 0 && !showAddItemForm ? (
         <p className="text-gray-500 text-sm mb-4">No items yet</p>
       ) : (
         <div className="space-y-2 mb-4">
@@ -356,58 +344,97 @@ function CollaboratorSublist({
         </div>
       )}
 
-      {collaborator.isViewer && (
-        <>
-          {showAddItem ? (
-            <form
-              onSubmit={handleAddItem}
-              className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <input
-                  type="text"
-                  placeholder="Item name (required if no URL)"
-                  value={newItemLabel}
-                  onChange={(e) => setNewItemLabel(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-                />
-                <input
-                  type="url"
-                  placeholder="URL (required if no name)"
-                  value={newItemUrl}
-                  onChange={(e) => setNewItemUrl(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-                />
-              </div>
-              <div className="mb-3">
-                <textarea
-                  placeholder="Description (optional)"
-                  value={newItemDescription}
-                  onChange={(e) => setNewItemDescription(e.target.value)}
-                  rows={2}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={submitting || (!newItemLabel && !newItemUrl)}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:bg-gray-300 hover:bg-indigo-700 transition-colors"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddItem(false)}
-                  className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
+      {showAddItemForm ? (
+        <form
+          onSubmit={handleAddItem}
+          className={`p-4 rounded-lg border ${
+            isSecretItem
+              ? "bg-purple-50 border-purple-200 mt-3"
+              : "bg-gray-50 border-gray-200"
+          }`}
+        >
+          {isSecretItem && (
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-1 rounded">
+                SECRET GIFT
+              </span>
+              <span className="text-xs text-purple-600">
+                {collaborator.user?.name ||
+                  collaborator.name ||
+                  collaborator.email}{" "}
+                won't see this
+              </span>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <input
+              type="text"
+              placeholder="Item name (required if no URL)"
+              value={newItemLabel}
+              onChange={(e) => setNewItemLabel(e.target.value)}
+              className={`px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 ${
+                isSecretItem
+                  ? "border-purple-300 focus:ring-purple-100 focus:border-purple-500"
+                  : "border-gray-300 focus:ring-indigo-100 focus:border-indigo-500"
+              }`}
+            />
+            <input
+              type="url"
+              placeholder="URL (required if no name)"
+              value={newItemUrl}
+              onChange={(e) => setNewItemUrl(e.target.value)}
+              className={`px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 ${
+                isSecretItem
+                  ? "border-purple-300 focus:ring-purple-100 focus:border-purple-500"
+                  : "border-gray-300 focus:ring-indigo-100 focus:border-indigo-500"
+              }`}
+            />
+          </div>
+          {isSecretItem && (
+            <p className="text-xs text-purple-600 mb-3">
+              Provide at least one: a name, a URL, or both. If only a URL is
+              provided, the page title will be fetched automatically.
+            </p>
+          )}
+          <div className="mb-3">
+            <textarea
+              placeholder="Description (optional)"
+              value={newItemDescription}
+              onChange={(e) => setNewItemDescription(e.target.value)}
+              rows={2}
+              className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 ${
+                isSecretItem
+                  ? "border-purple-300 focus:ring-purple-100 focus:border-purple-500"
+                  : "border-gray-300 focus:ring-indigo-100 focus:border-indigo-500"
+              }`}
+            />
+          </div>
+          <div className="flex gap-2">
             <button
-              onClick={() => setShowAddItem(true)}
+              type="submit"
+              disabled={submitting || (!newItemLabel && !newItemUrl)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium disabled:bg-gray-300 transition-colors ${
+                isSecretItem
+                  ? "bg-purple-600 text-white hover:bg-purple-700"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              }`}
+            >
+              {isSecretItem ? "Add Secret Gift" : "Add"}
+            </button>
+            <button
+              type="button"
+              onClick={closeAddItemForm}
+              className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-gray-800"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          {collaborator.isViewer && (
+            <button
+              onClick={() => openAddItemForm(false)}
               className="text-indigo-600 text-sm font-medium hover:text-indigo-700 flex items-center gap-1"
             >
               <svg
@@ -426,79 +453,9 @@ function CollaboratorSublist({
               Add Item
             </button>
           )}
-        </>
-      )}
-
-      {!collaborator.isViewer && registry.allowSecretGifts && (
-        <>
-          {showAddSecretItem ? (
-            <form
-              onSubmit={handleAddSecretItem}
-              className="p-4 bg-purple-50 rounded-lg border border-purple-200 mt-3"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-1 rounded">
-                  SECRET GIFT
-                </span>
-                <span className="text-xs text-purple-600">
-                  {collaborator.user?.name ||
-                    collaborator.name ||
-                    collaborator.email}{" "}
-                  won't see this
-                </span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <input
-                  type="text"
-                  placeholder="Item name (required if no URL)"
-                  value={newSecretItemLabel}
-                  onChange={(e) => setNewSecretItemLabel(e.target.value)}
-                  className="px-4 py-2.5 border border-purple-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-100 focus:border-purple-500"
-                />
-                <input
-                  type="url"
-                  placeholder="URL (required if no name)"
-                  value={newSecretItemUrl}
-                  onChange={(e) => setNewSecretItemUrl(e.target.value)}
-                  className="px-4 py-2.5 border border-purple-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-100 focus:border-purple-500"
-                />
-              </div>
-              <p className="text-xs text-purple-600 mb-3">
-                Provide at least one: a name, a URL, or both. If only a URL is
-                provided, the page title will be fetched automatically.
-              </p>
-              <div className="mb-3">
-                <textarea
-                  placeholder="Description (optional)"
-                  value={newSecretItemDescription}
-                  onChange={(e) => setNewSecretItemDescription(e.target.value)}
-                  rows={2}
-                  className="w-full px-4 py-2.5 border border-purple-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-100 focus:border-purple-500"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={
-                    submittingSecret ||
-                    (!newSecretItemLabel && !newSecretItemUrl)
-                  }
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:bg-gray-300 hover:bg-purple-700 transition-colors"
-                >
-                  Add Secret Gift
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddSecretItem(false)}
-                  className="text-gray-600 px-4 py-2 text-sm font-medium hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
+          {!collaborator.isViewer && registry.allowSecretGifts && (
             <button
-              onClick={() => setShowAddSecretItem(true)}
+              onClick={() => openAddItemForm(true)}
               className="text-purple-600 text-sm font-medium hover:text-purple-700 flex items-center gap-1 mt-2"
             >
               <svg
