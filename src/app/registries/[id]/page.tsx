@@ -575,7 +575,7 @@ function ItemRow({
   onUpdate,
 }: {
   item: Item;
-  ownerName: string | null;
+  ownerName: string;
   isOwner: boolean;
   onUpdate: () => void;
 }) {
@@ -901,22 +901,42 @@ function RegistryHeader({
 
   return (
     <>
-      <div className="flex justify-between items-start mb-8 gap-4">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900 break-words">
-            {registry.title}
-          </h1>
-          <p className="text-gray-600 mt-1 break-words">
-            Created by {registry.owner.name || registry.owner.email}
-            {registry.occasionDate &&
-              ` · ${new Date(registry.occasionDate).toLocaleDateString()}`}
-          </p>
+      <div className="mb-8">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 break-words">
+              {registry.title}
+            </h1>
+            <p className="text-gray-600 mt-1 break-words">
+              Created by {registry.owner.name || registry.owner.email}
+              {registry.occasionDate &&
+                ` · ${new Date(registry.occasionDate).toLocaleDateString()}`}
+            </p>
+          </div>
+          <div className="hidden md:flex gap-2 flex-shrink-0">
+            {registry.isOwner && (
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="bg-gray-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              >
+                Settings
+              </button>
+            )}
+            {canInvite && (
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Invite People
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex md:hidden gap-2 mt-4">
           {registry.isOwner && (
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="bg-gray-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-700 transition-colors"
+              className="flex-1 bg-gray-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-gray-700 transition-colors"
             >
               Settings
             </button>
@@ -924,7 +944,7 @@ function RegistryHeader({
           {canInvite && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="flex-1 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
             >
               Invite People
             </button>
