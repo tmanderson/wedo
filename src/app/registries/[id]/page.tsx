@@ -366,14 +366,14 @@ function CollaboratorSublist({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 <input
                   type="text"
-                  placeholder="Item name"
+                  placeholder="Item name (required if no URL)"
                   value={newItemLabel}
                   onChange={(e) => setNewItemLabel(e.target.value)}
                   className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
                 />
                 <input
                   type="url"
-                  placeholder="URL (optional)"
+                  placeholder="URL (required if no name)"
                   value={newItemUrl}
                   onChange={(e) => setNewItemUrl(e.target.value)}
                   className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
@@ -450,19 +450,23 @@ function CollaboratorSublist({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 <input
                   type="text"
-                  placeholder="Item name"
+                  placeholder="Item name (required if no URL)"
                   value={newSecretItemLabel}
                   onChange={(e) => setNewSecretItemLabel(e.target.value)}
                   className="px-4 py-2.5 border border-purple-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-100 focus:border-purple-500"
                 />
                 <input
                   type="url"
-                  placeholder="URL (optional)"
+                  placeholder="URL (required if no name)"
                   value={newSecretItemUrl}
                   onChange={(e) => setNewSecretItemUrl(e.target.value)}
                   className="px-4 py-2.5 border border-purple-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-100 focus:border-purple-500"
                 />
               </div>
+              <p className="text-xs text-purple-600 mb-3">
+                Provide at least one: a name, a URL, or both. If only a URL is
+                provided, the page title will be fetched automatically.
+              </p>
               <div className="mb-3">
                 <textarea
                   placeholder="Description (optional)"
@@ -569,8 +573,12 @@ function ItemRow({
   >(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // Determine display text based on name/URL/parsedTitle combination
+  // If both name and URL: use name as link text
+  // If only URL: use parsedTitle (scraped) or URL as fallback
+  // If only name: display name (no link)
   const displayName =
-    item.parsedTitle || item.label || item.url || "Unnamed item";
+    item.label || item.parsedTitle || item.url || "Unnamed item";
   const isDeleted = !!item.deletedAt;
   const isLoading = actionLoading !== null;
 

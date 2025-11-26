@@ -27,6 +27,12 @@ function EditItemModal({
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate that at least one of label or url is provided
+    if (!label.trim() && !url.trim()) {
+      setError("Either item name or URL must be provided");
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -61,22 +67,25 @@ function EditItemModal({
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Item name"
+              placeholder="Item name (required if no URL)"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
             />
           </div>
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-900 mb-2">
-              URL (optional)
+              URL
             </label>
             <input
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="URL (required if no name)"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              If provided without a name, the page title will be used
+            </p>
           </div>
 
           <div className="mb-6">

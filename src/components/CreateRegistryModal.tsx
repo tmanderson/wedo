@@ -332,7 +332,7 @@ function CreateRegistryModal({
                                       e.target.value,
                                     )
                                   }
-                                  placeholder="Item label"
+                                  placeholder="Item name (required if no URL)"
                                   className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-gray-900 placeholder-gray-400 focus:ring-1 focus:ring-indigo-100 focus:border-indigo-500"
                                 />
                                 <input
@@ -346,7 +346,7 @@ function CreateRegistryModal({
                                       e.target.value,
                                     )
                                   }
-                                  placeholder="https://..."
+                                  placeholder="URL (required if no name)"
                                   className="w-full px-2 py-1 border border-gray-300 rounded text-xs text-gray-900 placeholder-gray-400 focus:ring-1 focus:ring-indigo-100 focus:border-indigo-500"
                                 />
                               </div>
