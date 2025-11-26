@@ -186,6 +186,7 @@ export default function RegistryPage() {
             registry.collaborators.map((collaborator) => (
               <CollaboratorSublist
                 key={collaborator.id}
+                viewingUserId={user?.id || null}
                 collaborator={collaborator}
                 registryId={registry.id}
                 isOwner={registry.isOwner}
@@ -209,12 +210,14 @@ export default function RegistryPage() {
 }
 
 function CollaboratorSublist({
+  viewingUserId,
   collaborator,
   registryId,
   isOwner,
   registry,
   onUpdate,
 }: {
+  viewingUserId: string | null;
   collaborator: Collaborator;
   registryId: string;
   isOwner: boolean;
@@ -337,6 +340,7 @@ function CollaboratorSublist({
               key={item.id}
               item={item}
               isOwner={collaborator.isViewer}
+              isClaimant={viewingUserId === item.claimedByUser?.id}
               ownerName={collaborator.name}
               onUpdate={onUpdate}
             />
@@ -517,12 +521,14 @@ function LoadingSpinner({ className = "w-4 h-4" }: { className?: string }) {
 function ItemRow({
   item,
   ownerName,
+  isClaimant,
   isOwner,
   onUpdate,
 }: {
   item: Item;
   ownerName: string | null;
   isOwner: boolean;
+  isClaimant: boolean;
   onUpdate: () => Promise<void>;
 }) {
   const [actionLoading, setActionLoading] = useState<
@@ -658,7 +664,7 @@ function ItemRow({
                 </button>
               )}
               {(item.status === "CLAIMED" || item.status === "BOUGHT") &&
-                item.claimedByUser && (
+                isClaimant && (
                   <>
                     <button
                       onClick={handleRelease}
