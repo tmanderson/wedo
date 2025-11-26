@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * Creates a Supabase admin client using the service role key
- * This should only be used server-side
+ * This should only be used server-side and bypasses RLS
  */
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

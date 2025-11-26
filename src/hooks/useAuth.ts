@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  User,
-  Session,
-  createClient,
-  SupabaseClient,
-} from "@supabase/supabase-js";
+import { User, Session, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 export interface AuthState {
   user: User | null;
@@ -14,22 +10,8 @@ export interface AuthState {
   loading: boolean;
 }
 
-function getSupabaseClient(): SupabaseClient | null {
-  if (typeof window === "undefined") return null;
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn("Supabase environment variables not configured");
-    return null;
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey);
-}
-
 export function useAuth() {
-  const [supabase] = useState<SupabaseClient | null>(() => getSupabaseClient());
+  const [supabase] = useState<SupabaseClient>(() => createClient());
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -37,11 +19,6 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    if (!supabase) {
-      setAuthState({ user: null, session: null, loading: false });
-      return;
-    }
-
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthState({
@@ -67,10 +44,6 @@ export function useAuth() {
 
   const signIn = useCallback(
     async (email: string, redirectTo?: string) => {
-      if (!supabase) {
-        return { error: { message: "Supabase not configured" } };
-      }
-
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -83,17 +56,11 @@ export function useAuth() {
   );
 
   const signOut = useCallback(async () => {
-    if (!supabase) {
-      return { error: { message: "Supabase not configured" } };
-    }
-
     const { error } = await supabase.auth.signOut();
     return { error };
   }, [supabase]);
 
   const getAccessToken = useCallback(async () => {
-    if (!supabase) return null;
-
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -105,7 +72,7 @@ export function useAuth() {
     signIn,
     signOut,
     getAccessToken,
-    isConfigured: !!supabase,
+    isConfigured: true,
   };
 }
 

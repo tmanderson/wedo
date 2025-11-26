@@ -1,24 +1,6 @@
 "use client";
 
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-let supabaseClient: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient | null {
-  if (typeof window === "undefined") return null;
-
-  if (supabaseClient) return supabaseClient;
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return null;
-  }
-
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-  return supabaseClient;
-}
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Authenticated fetch wrapper that includes the Supabase access token
@@ -27,15 +9,11 @@ export async function authFetch(
   url: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const supabase = getSupabase();
-  let accessToken: string | undefined;
-
-  if (supabase) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    accessToken = session?.access_token;
-  }
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
 
   const headers = new Headers(options.headers);
 
