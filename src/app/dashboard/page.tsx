@@ -178,6 +178,7 @@ export default function DashboardPage() {
                   isOwner: true,
                   owner: { id: user.id, name: null, email: user.email! },
                   collaboratorCount: 1,
+                  pendingInviteCount: 0,
                 },
               ]);
               setShowCreateModal(false);
