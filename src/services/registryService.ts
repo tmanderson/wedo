@@ -245,6 +245,14 @@ export async function listRegistriesForUser(userId: string) {
           _count: {
             select: { collaborators: true },
           },
+          collaborators: {
+            where: {
+              status: CollaboratorStatus.PENDING,
+            },
+            select: {
+              id: true,
+            },
+          },
         },
       },
     },
@@ -263,6 +271,7 @@ export async function listRegistriesForUser(userId: string) {
     isOwner: c.registry.ownerId === userId,
     owner: c.registry.owner,
     collaboratorCount: c.registry._count.collaborators,
+    pendingInviteCount: c.registry.collaborators.length,
     createdAt: c.registry.createdAt,
   }));
 }

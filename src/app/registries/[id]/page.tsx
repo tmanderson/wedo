@@ -57,6 +57,8 @@ interface Registry {
   collaborators: Collaborator[];
 }
 
+type FilterType = "all" | "free" | "claimed" | "bought" | "mine";
+
 export default function RegistryPage() {
   const params = useParams();
   const router = useRouter();
@@ -69,6 +71,9 @@ export default function RegistryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<FilterType>>(
+    new Set(["all"]),
+  );
 
   const fetchRegistry = useCallback(async () => {
     const { data, error: apiError } = await api.get<Registry>(
@@ -85,6 +90,56 @@ export default function RegistryPage() {
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
+  };
+
+  const toggleFilter = (filter: FilterType) => {
+    setActiveFilters((prev) => {
+      const newFilters = new Set(prev);
+
+      if (filter === "all") {
+        // Checking "All" clears all other filters
+        return new Set(["all"]);
+      } else {
+        // Checking any other filter removes "All"
+        newFilters.delete("all");
+
+        if (newFilters.has(filter)) {
+          newFilters.delete(filter);
+          // If no filters remain, default back to "All"
+          if (newFilters.size === 0) {
+            return new Set(["all"]);
+          }
+        } else {
+          newFilters.add(filter);
+        }
+      }
+
+      return newFilters;
+    });
+  };
+
+  const filterItem = (item: Item, collaborator: Collaborator): boolean => {
+    // If "All" is active, show everything
+    if (activeFilters.has("all")) return true;
+
+    const filters = Array.from(activeFilters);
+    // Check each active filter - item must match ALL of them (AND logic)
+    return filters.every((filter) => {
+      switch (filter) {
+        case "free":
+          return item.status === "UNCLAIMED";
+        case "claimed":
+          return item.status === "CLAIMED";
+        case "bought":
+          return item.status === "BOUGHT";
+        case "mine":
+          // Item is mine if I created it (I'm the collaborator/owner of the sublist)
+          // OR if I claimed/bought it
+          return collaborator.isViewer || item.claimedByUser?.id === user?.id;
+        default:
+          return true;
+      }
+    });
   };
 
   useEffect(() => {
@@ -181,6 +236,62 @@ export default function RegistryPage() {
           onRefresh={fetchRegistry}
         />
 
+        {registry && (
+          <div className="sticky top-0 sm:top-2 z-10 mb-6 bg-white border border-gray-200 md:rounded-xl p-4 shadow-sm -mx-8 sm:mx-0 px-8 md:px-4">
+            <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-thin justify-end">
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={activeFilters.has("all")}
+                  onChange={() => toggleFilter("all")}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">All</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={activeFilters.has("free")}
+                  onChange={() => toggleFilter("free")}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Free</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={activeFilters.has("claimed")}
+                  onChange={() => toggleFilter("claimed")}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Claimed
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={activeFilters.has("bought")}
+                  onChange={() => toggleFilter("bought")}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Bought
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={activeFilters.has("mine")}
+                  onChange={() => toggleFilter("mine")}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Mine</span>
+              </label>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6">
           {registry &&
             registry.collaborators
@@ -200,6 +311,7 @@ export default function RegistryPage() {
                   isOwner={registry.isOwner}
                   registry={registry}
                   onUpdate={fetchRegistry}
+                  filterItem={filterItem}
                 />
               ))}
         </div>
@@ -224,6 +336,7 @@ function CollaboratorSublist({
   isOwner,
   registry,
   onUpdate,
+  filterItem,
 }: {
   viewingUserId: string | null;
   collaborator: Collaborator;
@@ -231,6 +344,7 @@ function CollaboratorSublist({
   isOwner: boolean;
   registry: Registry;
   onUpdate: () => Promise<void>;
+  filterItem: (item: Item, collaborator: Collaborator) => boolean;
 }) {
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [isSecretItem, setIsSecretItem] = useState(false);
@@ -342,18 +456,60 @@ function CollaboratorSublist({
       {collaborator.sublist?.items.length === 0 && !showAddItemForm ? (
         <p className="text-gray-500 text-sm mb-4">No items yet</p>
       ) : (
-        <div className="space-y-2 mb-4">
-          {collaborator.sublist?.items.map((item) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              isOwner={collaborator.isViewer}
-              isClaimant={viewingUserId === item.claimedByUser?.id}
-              ownerName={collaborator.name}
-              onUpdate={onUpdate}
-            />
-          ))}
-        </div>
+        <>
+          {(() => {
+            const filteredItems =
+              collaborator.sublist?.items.filter((item) =>
+                filterItem(item, collaborator),
+              ) || [];
+            const totalItems = collaborator.sublist?.items.length || 0;
+            const hiddenCount = totalItems - filteredItems.length;
+
+            if (filteredItems.length === 0 && hiddenCount > 0) {
+              return (
+                <div className="border border-gray-200 rounded-lg p-4 mb-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                      />
+                    </svg>
+                    <p className="text-gray-600 text-sm font-medium">
+                      You have filters active
+                    </p>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-1">
+                    {hiddenCount} {hiddenCount === 1 ? "item is" : "items are"}{" "}
+                    hidden
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-2 mb-4">
+                {filteredItems.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    isOwner={collaborator.isViewer}
+                    isClaimant={viewingUserId === item.claimedByUser?.id}
+                    ownerName={collaborator.name}
+                    onUpdate={onUpdate}
+                  />
+                ))}
+              </div>
+            );
+          })()}
+        </>
       )}
 
       {showAddItemForm ? (

@@ -17,6 +17,7 @@ interface Registry {
   isOwner: boolean;
   owner: { id: string; name: string | null; email: string };
   collaboratorCount: number;
+  pendingInviteCount: number;
   createdAt: string;
 }
 
@@ -248,6 +249,12 @@ function RegistryList({
                 {registry.collaboratorCount} collaborator
                 {registry.collaboratorCount !== 1 ? "s" : ""}
               </div>
+              {registry.pendingInviteCount > 0 && (
+                <div className="text-gray-500 whitespace-nowrap">
+                  ({registry.pendingInviteCount} invite
+                  {registry.pendingInviteCount !== 1 ? "s" : ""} pending)
+                </div>
+              )}
               {registry.occasionDate && (
                 <div className="text-gray-500">
                   {new Date(registry.occasionDate).toLocaleDateString()}
